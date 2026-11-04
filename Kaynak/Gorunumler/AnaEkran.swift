@@ -157,25 +157,3 @@ struct AnaKart: View {
         .shadow(color: ana ? Color.black.opacity(0.06) : .clear, radius: 10, x: 0, y: 4)
     }
 }
-
-/// "Yeni" işareti: telefonda kişiye özel tutulur (sitedeki yenilik_gorme mantığı).
-enum YenilikTakibi {
-    private static let anahtar = "yenilik.sonGorme"
-
-    static func yeniSayisi(_ liste: [Yenilik]) -> Int {
-        let sinir: Date
-        if let son = UserDefaults.standard.object(forKey: anahtar) as? Date {
-            sinir = son
-        } else {
-            sinir = Date().addingTimeInterval(-14 * 86400)
-        }
-        return liste.filter { y in
-            guard let t = Tarih.tarihOku(y.tarih) else { return false }
-            return t > sinir
-        }.count
-    }
-
-    static func goruldu() {
-        UserDefaults.standard.set(Date(), forKey: anahtar)
-    }
-}

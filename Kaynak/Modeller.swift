@@ -251,7 +251,10 @@ struct Tur: Identifiable, Hashable {
     let notlar: String?
     let kaynak: String?
     let kaynakURL: URL?
+    let guncelleme: String?
     let arama: String
+    /// turler.php data-ara: "ad diğer_adlar bilimsel_ad" (Türkçe küçük harf)
+    let aramaSite: String
 
     init(_ s: Satir) {
         id = s.tamsayi("id")
@@ -268,7 +271,10 @@ struct Tur: Identifiable, Hashable {
         notlar = s.secimli("notlar")
         kaynak = s.secimli("kaynak")
         kaynakURL = Baglanti.url(s.secimli("kaynak_url"))
+        guncelleme = s.secimli("updated_at")
         arama = Metin.katla(Metin.birlestir([ad, digerAdlar, bilimselAd]))
+        let birlesik = ad + " " + (digerAdlar ?? "") + " " + (bilimselAd ?? "")
+        aramaSite = birlesik.trimmingCharacters(in: .whitespaces).lowercased(with: TRMetin.tr)
     }
 
     /// Listede gösterilen kısa bilgi.
@@ -376,6 +382,8 @@ struct Yenilik: Identifiable, Hashable {
     let aciklama: String
     let kategori: String
     let tarih: String?
+    let link: String?
+    let olusturma: String?
 
     init(_ s: Satir) {
         id = s.tamsayi("id")
@@ -383,5 +391,7 @@ struct Yenilik: Identifiable, Hashable {
         aciklama = s.metin("aciklama")
         kategori = s.secimli("kategori") ?? "Duyuru"
         tarih = s.secimli("tarih")
+        link = s.secimli("link")
+        olusturma = s.secimli("created_at")
     }
 }
