@@ -1,0 +1,323 @@
+import Foundation
+
+// Sunucudaki tabloların uygulamadaki karşılıkları.
+// Her model, sunucudan gelen satırdan (Satir) oluşturulur; eksik alanlar boş kalır, uygulama çökmez.
+
+struct Mevzuat: Identifiable, Hashable {
+    let id: Int
+    let ad: String
+    let tur: String?
+    let rgTarihi: String?
+    let rgSayisi: String?
+    let kaynakURL: URL?
+    let aciklama: String?
+
+    init(_ s: Satir) {
+        id = s.tamsayi("id")
+        ad = s.metin("mevzuat_adi")
+        tur = s.secimli("mevzuat_turu")
+        rgTarihi = s.secimli("resmi_gazete_tarihi")
+        rgSayisi = s.secimli("resmi_gazete_sayisi")
+        kaynakURL = Baglanti.url(s.secimli("kaynak_url"))
+        aciklama = s.secimli("aciklama")
+    }
+}
+
+struct Madde: Identifiable, Hashable {
+    let id: Int
+    let mevzuatId: Int
+    let no: String
+    let baslik: String?
+    let metin: String
+    let mevzuatAdi: String?
+    let kaynakURL: URL?
+    let arama: String
+
+    init(_ s: Satir, mevzuatlar: [Int: Mevzuat]) {
+        id = s.tamsayi("id")
+        mevzuatId = s.tamsayi("mevzuat_id")
+        no = s.metin("madde_no")
+        baslik = s.secimli("madde_basligi")
+        metin = s.metin("madde_metni")
+        let m = mevzuatlar[mevzuatId]
+        mevzuatAdi = m?.ad
+        kaynakURL = m?.kaynakURL
+        arama = Metin.katla(Metin.birlestir([baslik, metin, mevzuatAdi]))
+    }
+
+    var gorunenBaslik: String { baslik ?? no }
+}
+
+struct Ihlal: Identifiable, Hashable {
+    let id: Int
+    let kategori: String?
+    let ad: String
+    let aciklama: String?
+    let arama: String
+
+    init(_ s: Satir) {
+        id = s.tamsayi("id")
+        kategori = s.secimli("kategori")
+        ad = s.metin("ihlal_adi")
+        aciklama = s.secimli("aciklama")
+        arama = Metin.katla(Metin.birlestir([ad, aciklama, kategori]))
+    }
+}
+
+struct Fiil: Identifiable, Hashable {
+    let id: Int
+    let fiil: String
+    let mevzuat: String
+    let madde: String?
+    let bent: String?
+    let aciklama: String?
+    let kapsam: String?
+    let dogrulama: String?
+    let notlar: String?
+    let kaynak: String?
+    let arama: String
+
+    init(_ s: Satir) {
+        id = s.tamsayi("id")
+        fiil = s.metin("fiil")
+        mevzuat = s.metin("mevzuat")
+        madde = s.secimli("madde")
+        bent = s.secimli("bent")
+        aciklama = s.secimli("aciklama")
+        kapsam = s.secimli("kapsam")
+        dogrulama = s.secimli("dogrulama")
+        notlar = s.secimli("notlar")
+        kaynak = s.secimli("kaynak")
+        arama = Metin.katla(Metin.birlestir([fiil, aciklama, kapsam]))
+    }
+
+    /// "6/2 Tebliğ (2024/21) · Madde 16/2-b"
+    var dayanak: String {
+        var parca = mevzuat
+        if let m = madde {
+            parca += " · Madde " + m
+            if let b = bent { parca += "/" + b }
+        }
+        return parca
+    }
+}
+
+struct SevkKaydi: Identifiable, Hashable {
+    let id: Int
+    let kategori: String
+    let yasalMadde: String
+    let gerekce: String
+    let sevkMakami: String?
+    let kontrolDurumu: String?
+    let dogrulamaDurumu: String
+    let dogrulamaTarihi: String?
+    let dogrulamaNotu: String?
+    let resmiKaynakURL: URL?
+    let kontrolNotu: String?
+    let kayitTuru: String?
+    let yaptirimDogrulama: String?
+    let islemler: [String]
+    let yaptirimlar: [String]
+    let dayanaklar: [String]
+    let kaynaklar: [String]
+    let notlar: [String]
+    let eskiSevkler: [String]
+    let arama: String
+
+    init(_ s: Satir) {
+        id = s.tamsayi("id")
+        kategori = s.metin("kategori")
+        yasalMadde = s.metin("yasal_islem_maddesi")
+        gerekce = s.metin("gerekce")
+        sevkMakami = s.secimli("sevk_makami")
+        kontrolDurumu = s.secimli("kontrol_durumu")
+        dogrulamaDurumu = s.metin("dogrulama_durumu")
+        dogrulamaTarihi = s.secimli("dogrulama_tarihi")
+        dogrulamaNotu = s.secimli("dogrulama_notu")
+        resmiKaynakURL = Baglanti.url(s.secimli("resmi_kaynak_url"))
+        kontrolNotu = s.secimli("kontrol_notu")
+        kayitTuru = s.secimli("kayit_turu")
+        yaptirimDogrulama = s.secimli("yaptirim_dogrulama")
+        islemler = s.liste("zengin_islemler")
+        yaptirimlar = s.liste("zengin_yaptirimlar")
+        dayanaklar = s.liste("zengin_dayanaklar")
+        kaynaklar = s.liste("zengin_kaynaklar")
+        notlar = s.liste("zengin_notlar")
+        eskiSevkler = s.liste("zengin_eski_sevkler")
+        arama = Metin.katla(Metin.birlestir([gerekce, kategori, yasalMadde, dayanaklar.joined(separator: " ")]))
+    }
+}
+
+struct Yaptirim: Identifiable, Hashable {
+    let id: Int
+    let yil: Int
+    let olayTuru: String
+    let nitelik: String
+    let kanunMaddesi: String?
+    let yonetmelikMaddesi: String?
+    let tebligMaddesi: String?
+    let cezaMaddesi: String?
+    let miktar: Double?
+    let enAz: Double?
+    let enCok: Double?
+    let hesaplamaTipi: String?
+    let kaynakMetni: String?
+    let suUrunuElKoyma: String?
+    let vasitaElKoyma: String?
+    let notlar: String?
+    let arama: String
+
+    init(_ s: Satir) {
+        id = s.tamsayi("id")
+        yil = s.tamsayi("yil")
+        olayTuru = s.metin("olay_turu")
+        nitelik = s.metin("kabahatin_niteligi")
+        kanunMaddesi = s.secimli("kanun_maddesi")
+        yonetmelikMaddesi = s.secimli("yonetmelik_maddesi")
+        tebligMaddesi = s.secimli("teblig_maddesi")
+        cezaMaddesi = s.secimli("ceza_maddesi")
+        miktar = s.ondalik("ipc_miktari")
+        enAz = s.ondalik("ipc_min_tutar")
+        enCok = s.ondalik("ipc_max_tutar")
+        hesaplamaTipi = s.secimli("ipc_hesaplama_tipi")
+        kaynakMetni = s.secimli("ipc_kaynak_metni")
+        suUrunuElKoyma = s.secimli("su_urunlerine_el_koyma")
+        vasitaElKoyma = s.secimli("istihsal_vasitasina_el_koyma")
+        notlar = s.secimli("notlar")
+        arama = Metin.katla(Metin.birlestir([nitelik, olayTuru, kanunMaddesi, cezaMaddesi, tebligMaddesi]))
+    }
+
+    /// "16.106 TL" veya "9.473 – 47.397 TL"
+    var tutarMetni: String? {
+        if let a = enAz, let c = enCok, a != c {
+            return Para.aralik(a, c)
+        }
+        if let m = miktar ?? enAz ?? enCok, m > 0 {
+            return Para.yaz(m)
+        }
+        return nil
+    }
+}
+
+struct Tur: Identifiable, Hashable {
+    let id: Int
+    let ad: String
+    let digerAdlar: String?
+    let bilimselAd: String?
+    let grup: String
+    let fotoURL: URL?
+    let fotoKredi: String?
+    let fotoKaynakURL: URL?
+    let boyTicari: String?
+    let boyAmator: String?
+    let yasakDonemi: String?
+    let notlar: String?
+    let kaynak: String?
+    let kaynakURL: URL?
+    let arama: String
+
+    init(_ s: Satir) {
+        id = s.tamsayi("id")
+        ad = s.metin("ad")
+        digerAdlar = s.secimli("diger_adlar")
+        bilimselAd = s.secimli("bilimsel_ad")
+        grup = s.secimli("grup") ?? "Diğer"
+        fotoURL = Baglanti.url(s.secimli("foto_url"))
+        fotoKredi = s.secimli("foto_kredi")
+        fotoKaynakURL = Baglanti.url(s.secimli("foto_kaynak_url"))
+        boyTicari = s.secimli("boy_ticari")
+        boyAmator = s.secimli("boy_amator")
+        yasakDonemi = s.secimli("yasak_donemi")
+        notlar = s.secimli("notlar")
+        kaynak = s.secimli("kaynak")
+        kaynakURL = Baglanti.url(s.secimli("kaynak_url"))
+        arama = Metin.katla(Metin.birlestir([ad, digerAdlar, bilimselAd]))
+    }
+
+    /// Listede gösterilen kısa bilgi.
+    var ozet: String {
+        if let y = yasakDonemi { return y }
+        if let b = boyTicari { return "Ticari boy: " + b }
+        return grup
+    }
+}
+
+struct Bolge: Identifiable, Hashable {
+    let id: Int
+    let deniz: String
+    let il: String
+    let ilce: String?
+    let baslik: String
+    let aciklama: String?
+    let yasakTuru: String?
+    let izinliAvAraci: String?
+    let mevzuatAdi: String?
+    let mevzuatMadde: String?
+    let tebligTuru: String?
+    let haritaNo: String?
+    let kaynak: String?
+    let kapsam: String?
+    let koordinatlar: String?
+    let baslangic: String?
+    let bitis: String?
+    let arama: String
+
+    init(_ s: Satir) {
+        id = s.tamsayi("id")
+        deniz = s.metin("deniz")
+        il = s.metin("il")
+        ilce = s.secimli("ilce")
+        baslik = s.metin("baslik")
+        aciklama = s.secimli("aciklama")
+        yasakTuru = s.secimli("yasak_turu")
+        izinliAvAraci = s.secimli("izinli_av_araci")
+        mevzuatAdi = s.secimli("mevzuat_adi")
+        mevzuatMadde = s.secimli("mevzuat_madde")
+        tebligTuru = s.secimli("teblig_turu")
+        haritaNo = s.secimli("harita_no")
+        kaynak = s.secimli("kaynak")
+        kapsam = s.secimli("kapsam")
+        koordinatlar = s.secimli("koordinatlar")
+        baslangic = s.secimli("baslangic_tarihi")
+        bitis = s.secimli("bitis_tarihi")
+        arama = Metin.katla(Metin.birlestir([baslik, il, ilce, deniz, yasakTuru, aciklama]))
+    }
+
+    var yer: String {
+        if let i = ilce { return il + " / " + i }
+        return il
+    }
+}
+
+struct Yenilik: Identifiable, Hashable {
+    let id: Int
+    let baslik: String
+    let aciklama: String
+    let kategori: String
+    let tarih: String?
+
+    init(_ s: Satir) {
+        id = s.tamsayi("id")
+        baslik = s.metin("baslik")
+        aciklama = s.metin("aciklama")
+        kategori = s.secimli("kategori") ?? "Duyuru"
+        tarih = s.secimli("tarih")
+    }
+}
+
+/// Mevzuat aramasının tek bir sonucu.
+enum AramaSonucu: Identifiable {
+    case fiil(Fiil)
+    case madde(Madde)
+    case ihlal(Ihlal)
+    case sevk(SevkKaydi)
+
+    var id: String {
+        switch self {
+        case .fiil(let f): return "f\(f.id)"
+        case .madde(let m): return "m\(m.id)"
+        case .ihlal(let i): return "i\(i.id)"
+        case .sevk(let s): return "s\(s.id)"
+        }
+    }
+}

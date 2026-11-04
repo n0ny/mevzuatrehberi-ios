@@ -1,0 +1,52 @@
+name: MevzuatRehberi
+options:
+  bundleIdPrefix: com.barisguresci
+  deploymentTarget:
+    iOS: "15.0"
+  developmentLanguage: tr
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "3.0.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+targets:
+  MevzuatRehberi:
+    type: application
+    platform: iOS
+    sources:
+      - path: Kaynak
+      - path: Destek/PrivacyInfo.xcprivacy
+        buildPhase: resources
+    settings:
+      base:
+        PRODUCT_NAME: MevzuatRehberi
+        PRODUCT_BUNDLE_IDENTIFIER: com.barisguresci.sgmevzuat
+        INFOPLIST_FILE: Destek/Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        SUPPORTS_MACCATALYST: NO
+  MevzuatRehberiTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Testler
+    dependencies:
+      - target: MevzuatRehberi
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.barisguresci.sgmevzuat.tests
+        GENERATE_INFOPLIST_FILE: YES
+        TARGETED_DEVICE_FAMILY: "1"
+schemes:
+  MevzuatRehberi:
+    build:
+      targets:
+        MevzuatRehberi: all
+        MevzuatRehberiTests: [test]
+    test:
+      targets:
+        - MevzuatRehberiTests

@@ -1,61 +1,60 @@
-name: iOS Build and Tests
+name: iOS derleme
+
 on:
   workflow_dispatch:
   push:
-    paths:
-      - 'MevzuatRehberi-iOS.zip'
-      - '.github/workflows/ios-build.yml'
+
 permissions:
   contents: read
+
 jobs:
   build:
     runs-on: macos-15
-    timeout-minutes: 30
-    defaults:
-      run:
-        working-directory: source/MevzuatRehberi-iOS
+    timeout-minutes: 40
     steps:
       - uses: actions/checkout@v4
-      - name: Restore iOS project
-        working-directory: .
-        run: unzip -q MevzuatRehberi-iOS.zip -d source
-      - name: Xcode version
+
+      - name: XcodeGen kur
+        run: brew install xcodegen
+
+      - name: Xcode projesini oluştur
+        run: xcodegen generate
+
+      - name: Xcode sürümü
         run: xcodebuild -version
-      - name: Pick an available iPhone simulator
-        run: |
-          SIMULATOR_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; data=json.load(sys.stdin); ids=[d["udid"] for runtime,devices in data["devices"].items() if "iOS" in runtime for d in devices if d.get("isAvailable") and d["name"].startswith("iPhone")]; assert ids, "No iPhone simulator installed"; print(ids[0])')
-          echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
-      - name: Build and test on simulator
+
+      - name: iPhone için imzasız derleme
         run: |
           set -o pipefail
-          xcodebuild test -project MevzuatRehberi.xcodeproj -scheme MevzuatRehberi \
-            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
-            -derivedDataPath build/Simulator -resultBundlePath build/Tests.xcresult \
-            CODE_SIGNING_ALLOWED=NO
-      - name: Build unsigned app for real iPhones
-        run: |
-          set -o pipefail
-          xcodebuild build -project MevzuatRehberi.xcodeproj -scheme MevzuatRehberi \
+          xcodebuild build -quiet \
+            -project MevzuatRehberi.xcodeproj -scheme MevzuatRehberi \
             -configuration Release -sdk iphoneos -destination 'generic/platform=iOS' \
             -derivedDataPath build/Device CODE_SIGNING_ALLOWED=NO
-      - name: Package unsigned IPA for later signing
+
+      - name: IPA paketle
         run: |
           mkdir -p build/Unsigned/Payload
           cp -R build/Device/Build/Products/Release-iphoneos/MevzuatRehberi.app build/Unsigned/Payload/
           cd build/Unsigned
-          zip -qry ../MevzuatRehberi-unsigned.ipa Payload
-      - name: Save unsigned device build
+          zip -qry ../MevzuatRehberi-imzasiz.ipa Payload
+
+      - name: IPA dosyasını kaydet
         uses: actions/upload-artifact@v4
         with:
-          name: MevzuatRehberi-unsigned-IPA-NEEDS-SIGNING
-          path: source/MevzuatRehberi-iOS/build/MevzuatRehberi-unsigned.ipa
+          name: MevzuatRehberi-imzasiz-IPA
+          path: build/MevzuatRehberi-imzasiz.ipa
           if-no-files-found: error
-          retention-days: 7
-      - name: Save simulator test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: iOS-test-results
-          path: source/MevzuatRehberi-iOS/build/Tests.xcresult
-          if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 14
+
+      - name: Simülatör seç
+        run: |
+          SIMULATOR_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); ids=[x["udid"] for r,xs in d["devices"].items() if "iOS" in r for x in xs if x.get("isAvailable") and x["name"].startswith("iPhone")]; assert ids, "iPhone simülatörü yok"; print(ids[0])')
+          echo "SIMULATOR_ID=$SIMULATOR_ID" >> "$GITHUB_ENV"
+
+      - name: Testler
+        run: |
+          set -o pipefail
+          xcodebuild test -quiet \
+            -project MevzuatRehberi.xcodeproj -scheme MevzuatRehberi \
+            -destination "platform=iOS Simulator,id=$SIMULATOR_ID" \
+            -derivedDataPath build/Simulator CODE_SIGNING_ALLOWED=NO
