@@ -370,6 +370,7 @@ struct KaynakListesi: Codable {
     let ek: [Site]
     let aciklama1380: [String: Aciklama]
     let genelAciklama: String
+    let yaptirim: YaptirimAyari?
 
     /// Uygulamayla gelen kopya (sunucudan yenisi gelene kadar kullanılır).
     static let gomulu: KaynakListesi = {
@@ -379,8 +380,13 @@ struct KaynakListesi: Codable {
             return liste
         }
         return KaynakListesi(mevzuat: [], genel: Site(ad: "Mevzuat Bilgi Sistemi", url: "https://www.mevzuat.gov.tr"),
-                             ek: [], aciklama1380: [:], genelAciklama: "")
+                             ek: [], aciklama1380: [:], genelAciklama: "", yaptirim: nil)
     }()
+
+    /// İdari yaptırım sayfasının ayarları (sunucudan gelmediyse uygulamadaki kopya).
+    var yaptirimAyari: YaptirimAyari {
+        return yaptirim ?? KaynakListesi.gomulu.yaptirim ?? YaptirimAyari.bos
+    }
 
     var tumListe: [Site] {
         return mevzuat.map { Site(ad: $0.ad, url: $0.url) } + ek
@@ -465,4 +471,36 @@ struct KaynakListesi: Codable {
         }
         return nil
     }
+}
+
+
+/// idari_yaptirim.php'deki sayfaya özel ayarlar (kaynaklar.json → "yaptirim").
+struct YaptirimAyari: Codable {
+    struct Kaynak: Codable {
+        let ad: String
+        let url: String
+    }
+
+    struct Ipucu: Codable {
+        let etiket: String
+        let sorgu: String
+    }
+
+    struct Tablo: Codable {
+        let satirlar: [String]
+        let not: String
+    }
+
+    let yil: Int
+    let resmiKaynaklar: [String: Kaynak]
+    let kaynakSirasi: [String]
+    let genelKaynaklar: [Kaynak]
+    let ipuclari: [Ipucu]
+    let genelTrol: Tablo
+    let ruhsat36_1_t: Tablo
+    let kisaAciklamalar: [String: String]
+
+    static let bos = YaptirimAyari(yil: 2026, resmiKaynaklar: [:], kaynakSirasi: [], genelKaynaklar: [], ipuclari: [],
+                                   genelTrol: Tablo(satirlar: [], not: ""), ruhsat36_1_t: Tablo(satirlar: [], not: ""),
+                                   kisaAciklamalar: [:])
 }

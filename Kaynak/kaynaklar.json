@@ -1,5 +1,5 @@
 {
- "surum": "2026-11-05",
+ "surum": "2026-11-05b",
  "mevzuat": [
   {
    "anahtar": [
@@ -227,5 +227,100 @@
    "explain": "Başka ülkelerin karasularında, münhasır ekonomik bölgelerinde veya uluslararası sularda ticari su ürünleri avcılığı yapacak gemilerin Bakanlıkça belirlenen şartlara uymasını zorunlu kılar."
   }
  },
- "genelAciklama": "Bu dayanak kaynak kaydında belirtilmiştir. Bu kayıt için ayrıntılı madde açıklaması doğrulama çalışması tamamlanana kadar kesin hukuki yorum olarak sunulmamaktadır."
+ "genelAciklama": "Bu dayanak kaynak kaydında belirtilmiştir. Bu kayıt için ayrıntılı madde açıklaması doğrulama çalışması tamamlanana kadar kesin hukuki yorum olarak sunulmamaktadır.",
+ "yaptirim": {
+  "yil": 2026,
+  "resmiKaynaklar": {
+   "kanun": {
+    "ad": "1380 sayılı Su Ürünleri Kanunu",
+    "url": "https://www.mevzuat.gov.tr/MevzuatMetin/1.5.1380.pdf"
+   },
+   "yonetmelik": {
+    "ad": "Su Ürünleri Yönetmeliği (Resmî Gazete, 10.03.1995)",
+    "url": "https://www.mevzuat.gov.tr/mevzuat?MevzuatNo=4988&MevzuatTur=7&MevzuatTertip=5"
+   },
+   "teblig61": {
+    "ad": "6/1 Numaralı Ticari Amaçlı Su Ürünleri Avcılığının Düzenlenmesi Hakkında Tebliğ (2024/20)",
+    "url": "https://resmigazete.gov.tr/eskiler/2024/08/20240811-3.htm"
+   },
+   "teblig62": {
+    "ad": "6/2 Numaralı Amatör Amaçlı Su Ürünleri Avcılığının Düzenlenmesi Hakkında Tebliğ (2024/21)",
+    "url": "https://resmigazete.gov.tr/eskiler/2024/08/20240811-4.htm"
+   },
+   "kabahat": {
+    "ad": "5326 sayılı Kabahatler Kanunu",
+    "url": "https://www.mevzuat.gov.tr/MevzuatMetin/1.5.5326.pdf"
+   }
+  },
+  "kaynakSirasi": [
+   "kanun",
+   "yonetmelik",
+   "teblig61",
+   "teblig62",
+   "kabahat"
+  ],
+  "genelKaynaklar": [
+   {
+    "ad": "Tarım ve Orman Bakanlığı",
+    "url": "https://www.tarimorman.gov.tr"
+   },
+   {
+    "ad": "Resmî Gazete",
+    "url": "https://www.resmigazete.gov.tr"
+   },
+   {
+    "ad": "Mevzuat Bilgi Sistemi",
+    "url": "https://www.mevzuat.gov.tr"
+   }
+  ],
+  "ipuclari": [
+   {
+    "etiket": "Ruhsat",
+    "sorgu": "ruhsat"
+   },
+   {
+    "etiket": "Küçük balık",
+    "sorgu": "küçük balık"
+   },
+   {
+    "etiket": "Ağ",
+    "sorgu": "ağ"
+   },
+   {
+    "etiket": "Yetiştiricilik",
+    "sorgu": "yetiştiricilik"
+   },
+   {
+    "etiket": "Amatör",
+    "sorgu": "amatör"
+   }
+  ],
+  "genelTrol": {
+   "satirlar": [
+    "Kişi — 12 metreden küçük gemi: **94.811 TL**",
+    "Kişi — 12 metre dahil, 22 metreden küçük gemi: **189.630 TL**",
+    "Kişi — 22 metre ve üzeri gemi: **284.449 TL**",
+    "Gemi sahibi/donatan — 12 metreden küçük gemi: **189.630 TL**",
+    "Gemi sahibi/donatan — 12 metre dahil, 22 metreden küçük gemi: **379.267 TL**",
+    "Gemi sahibi/donatan — 22 metre ve üzeri gemi: **568.890 TL**"
+   ],
+   "not": "Kişi/gemi sıfatı ve geminin tam boyu kontrol edilmelidir."
+  },
+  "ruhsat36_1_t": {
+   "satirlar": [
+    "Ruhsatlı gemi — 12 metreden küçük: **94.811 TL**",
+    "Ruhsatlı gemi — 12 metre dahil, 22 metreden küçük: **189.630 TL**",
+    "Ruhsatlı gemi — 22 metre ve üzeri: **284.449 TL**",
+    "Ruhsatsız gemi — 12 metreden küçük: **189.630 TL**",
+    "Ruhsatsız gemi — 12 metre dahil, 22 metreden küçük: **379.267 TL**",
+    "Ruhsatsız gemi — 22 metre ve üzeri: **474.079 TL**"
+   ],
+   "not": "Ruhsat durumu ve geminin tam boyu kontrol edilmelidir."
+  },
+  "kisaAciklamalar": {
+   "36/1-m": "Yasak olan su ürünlerinin satılması, nakledilmesi veya imalatta kullanılması/işlenmesi halinde uygulanır. Tutar, fiile ve miktara göre belirlenir.",
+   "36/1-l": "Trol avcılığına ilişkin ihlallerde uygulanır. Tutar, trol türü, geminin tam boyu ve olayın koşullarına göre belirlenir.",
+   "36/1-t": "Ticari su ürünleri avcılığına ilişkin aykırılıklarda uygulanır. Tutar, ruhsat durumu ve geminin tam boyuna göre belirlenir."
+  }
+ }
 }

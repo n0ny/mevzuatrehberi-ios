@@ -198,6 +198,7 @@ struct Yaptirim: Identifiable, Hashable {
     let vasitaElKoyma: String?
     let notlar: String?
     let arama: String
+    let aramaSite: String
 
     init(_ s: Satir) {
         id = s.tamsayi("id")
@@ -217,6 +218,10 @@ struct Yaptirim: Identifiable, Hashable {
         vasitaElKoyma = s.secimli("istihsal_vasitasina_el_koyma")
         notlar = s.secimli("notlar")
         arama = Metin.katla(Metin.birlestir([nitelik, olayTuru, kanunMaddesi, cezaMaddesi, tebligMaddesi]))
+        // idari_yaptirim.php: her kelime bu alanlardan herhangi birinde geçmeli (LIKE).
+        let alanlar: [String?] = [olayTuru, nitelik, kanunMaddesi, yonetmelikMaddesi, tebligMaddesi, cezaMaddesi,
+                                  kaynakMetni, suUrunuElKoyma, vasitaElKoyma, notlar]
+        aramaSite = alanlar.map { ($0 ?? "").lowercased(with: TRMetin.tr) }.joined(separator: "\u{1}")
     }
 
     /// "16.106 TL" veya "9.473 – 47.397 TL"
@@ -274,6 +279,33 @@ struct Tur: Identifiable, Hashable {
     }
 }
 
+/// bolge_yasaklari.php harita_cizim() sonucu (sunucuda aynı fonksiyonla hesaplanır).
+struct BolgeHaritasi: Hashable {
+    struct Nokta: Hashable {
+        let enlem: Double
+        let boylam: Double
+        let metin: String
+    }
+
+    /// "alan", "hat" veya "nokta"
+    let tur: String
+    let noktalar: [Nokta]
+    let cizim: [Nokta]
+
+    init?(_ deger: JSONDeger?) {
+        guard let o = deger?.nesne else { return nil }
+        func oku(_ a: JSONDeger) -> Nokta? {
+            guard let d = a.dizi, d.count >= 2, let e = d[0].ondalik, let b = d[1].ondalik else { return nil }
+            return Nokta(enlem: e, boylam: b, metin: d.count > 2 ? (d[2].metin ?? "") : "")
+        }
+        tur = o.metin("t")
+        noktalar = (o["p"]?.dizi ?? []).compactMap(oku)
+        let c = (o["c"]?.dizi ?? []).compactMap(oku)
+        cizim = c.isEmpty ? noktalar : c
+        if noktalar.isEmpty { return nil }
+    }
+}
+
 struct Bolge: Identifiable, Hashable {
     let id: Int
     let deniz: String
@@ -286,13 +318,13 @@ struct Bolge: Identifiable, Hashable {
     let mevzuatAdi: String?
     let mevzuatMadde: String?
     let tebligTuru: String?
-    let haritaNo: String?
-    let kaynak: String?
-    let kapsam: String?
     let koordinatlar: String?
     let baslangic: String?
     let bitis: String?
-    let arama: String
+    let aktif: Bool
+    let harita: BolgeHaritasi?
+    /// bolge_yasaklari.php LIKE araması yapılan alanlar (Türkçe küçük harf)
+    let aramaSite: String
 
     init(_ s: Satir) {
         id = s.tamsayi("id")
@@ -306,18 +338,35 @@ struct Bolge: Identifiable, Hashable {
         mevzuatAdi = s.secimli("mevzuat_adi")
         mevzuatMadde = s.secimli("mevzuat_madde")
         tebligTuru = s.secimli("teblig_turu")
-        haritaNo = s.secimli("harita_no")
-        kaynak = s.secimli("kaynak")
-        kapsam = s.secimli("kapsam")
         koordinatlar = s.secimli("koordinatlar")
-        baslangic = s.secimli("baslangic_tarihi")
-        bitis = s.secimli("bitis_tarihi")
-        arama = Metin.katla(Metin.birlestir([baslik, il, ilce, deniz, yasakTuru, aciklama]))
+        baslangic = Bolge.tarihVar(s.secimli("baslangic_tarihi"))
+        bitis = Bolge.tarihVar(s.secimli("bitis_tarihi"))
+        aktif = s["aktif"] == nil ? true : s.tamsayi("aktif") != 0
+        harita = BolgeHaritasi(s["harita"])
+        let alanlar: [String?] = [baslik, aciklama, il, ilce, mevzuatAdi, mevzuatMadde]
+        aramaSite = alanlar.map { ($0 ?? "").lowercased(with: TRMetin.tr) }.joined(separator: "\u{1}")
+    }
+
+    /// "0000-00-00" tarih sayılmaz (tarih_var).
+    static func tarihVar(_ s: String?) -> String? {
+        guard let t = s?.trimmingCharacters(in: .whitespaces), !t.isEmpty, !t.hasPrefix("0000-00-00") else { return nil }
+        return t
     }
 
     var yer: String {
-        if let i = ilce { return il + " / " + i }
-        return il
+        return [il, ilce ?? ""].filter { !$0.isEmpty }.joined(separator: " / ")
+    }
+
+    enum Durum {
+        case aktif, pasif(String)
+    }
+
+    /// status(): pasif kayıt, başlangıç bekleniyor, süresi bitmiş, aktif.
+    func durum(bugun: String) -> Durum {
+        if !aktif { return .pasif("Pasif kayıt") }
+        if let b = baslangic, bugun < String(b.prefix(10)) { return .pasif("Başlangıç tarihi bekleniyor") }
+        if let b = bitis, bugun > String(b.prefix(10)) { return .pasif("Süresi sona ermiş") }
+        return .aktif
     }
 }
 

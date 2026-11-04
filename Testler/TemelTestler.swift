@@ -129,4 +129,54 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(Tarih.gunYaz("2026-10-23"), "23 Ekim 2026")
         XCTAssertNil(Tarih.gunYaz(nil))
     }
+
+    func testYaptirimKurallari() throws {
+        XCTAssertEqual(YaptirimKurallari.kosulListesi(notlar: "Eski: x. 2026 CEZA: 36/1-m kişi 9.473 TL. Tekne 47.397 TL; Somut kayıt kontrol",
+                                                     kaynakMetni: "", yil: 2026),
+                       ["kişi 9.473 TL.", "Tekne 47.397 TL"])
+        XCTAssertEqual(YaptirimKurallari.tebligAnahtari("6/1 Tebliğ md. 5"), "teblig61")
+        XCTAssertEqual(YaptirimKurallari.tebligAnahtari("16/1"), "")
+        XCTAssertEqual(YaptirimKurallari.elKoymaDegeri(" hayır "), "Hayır")
+        XCTAssertEqual(YaptirimKurallari.maddeDegeri("Madde 36/1-a"), "36/1-a")
+        let ayar = KaynakListesi.gomulu.yaptirimAyari
+        XCTAssertEqual(ayar.yil, 2026)
+        let t = Yaptirim(try satir(#"{"id": 1, "yil": 2026, "kabahatin_niteligi": "X", "ceza_maddesi": "36/1-t"}"#))
+        if case .kosullar(let s, _) = YaptirimKurallari.ceza(t, ayar: ayar) {
+            XCTAssertEqual(s.count, 6)
+        } else {
+            XCTFail("36/1-t koşullu olmalı")
+        }
+        let dip = Yaptirim(try satir(#"{"id": 2, "yil": 2026, "kabahatin_niteligi": "Y", "ceza_maddesi": "36/1-l", "ipc_hesaplama_tipi": "36/1-l | DIP TROLU | GEMİ BOYU KOŞULLU", "ipc_min_tutar": "66357.00", "ipc_max_tutar": "199071.00"}"#))
+        if case .kosullar(let s, _) = YaptirimKurallari.ceza(dip, ayar: ayar) {
+            XCTAssertEqual(s[1], "12 metre dahil, 22 metreden küçük gemi: **₺132.714**")
+        } else {
+            XCTFail("Dip trolü koşullu olmalı")
+        }
+        let sabit = Yaptirim(try satir(#"{"id": 3, "yil": 2026, "kabahatin_niteligi": "Z", "ceza_maddesi": "36/1-p", "ipc_hesaplama_tipi": "SABİT", "ipc_miktari": "16106.00"}"#))
+        if case .tutar(let m) = YaptirimKurallari.ceza(sabit, ayar: ayar) {
+            XCTAssertEqual(m, "₺16.106")
+        } else {
+            XCTFail("Sabit tutar olmalı")
+        }
+        XCTAssertEqual(YaptirimKurallari.kisaca(sabit, ayar: ayar), "Bu ceza, ilgili fiil için uygulanır. Uygulanacak tutar yukarıda gösterilmiştir.")
+        let liste = [t, dip, sabit]
+        XCTAssertEqual(YaptirimKurallari.ara(liste, sorgu: "36/1-l", yil: 2026).map { $0.id }, [2])
+        XCTAssertTrue(YaptirimKurallari.ara(liste, sorgu: "x", yil: 2026).isEmpty)
+    }
+
+    func testBolge() throws {
+        let b = Bolge(try satir(#"""
+        {"id": "1", "deniz": "Akdeniz", "il": "Hatay", "ilce": "Dörtyol", "baslik": "İsdemir", "teblig_turu": "6/1", "aktif": "1",
+         "baslangic_tarihi": "0000-00-00",
+         "harita": {"t": "alan", "p": [[36.70, 36.19, "a"], [36.71, 36.19, "b"], [36.71, 36.20, "c"]], "c": [[36.70, 36.19], [36.71, 36.19], [36.71, 36.20]]}}
+        """#))
+        XCTAssertEqual(b.harita?.tur, "alan")
+        XCTAssertEqual(b.harita?.noktalar.count, 3)
+        XCTAssertNil(b.baslangic)
+        if case .aktif = b.durum(bugun: "2026-11-05") {} else { XCTFail("Aktif olmalı") }
+        XCTAssertTrue(b.aramaSite.contains("isdemir"))
+        XCTAssertEqual(BolgeKurallari.tarih("2026-03-01"), "01.03.2026")
+        XCTAssertEqual(BolgeKurallari.googleHarita(BolgeHaritasi.Nokta(enlem: 36.7, boylam: 36.19, metin: ""))?.absoluteString,
+                       "https://www.google.com/maps/search/?api=1&query=36.700000%2C36.190000")
+    }
 }
