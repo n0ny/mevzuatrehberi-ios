@@ -51,14 +51,70 @@ final class TemelTestler: XCTestCase {
 
     func testSevkKaydi() throws {
         let s = SevkKaydi(try satir(#"""
-        {"id": 600, "kategori": "1380 Sy", "yasal_islem_maddesi": "1380 Su Ürünleri Kanunu 23. madde",
+        {"id": "600", "kategori": "1380 Sy", "yasal_islem_maddesi": "1380 Su Ürünleri Kanunu 23. madde",
          "gerekce": "SERPME AGININ KAPALI IKEN YERDEN YUKSEKLIGI", "sevk_makami": null,
-         "dogrulama_durumu": "red", "zengin_dayanaklar": "[\"1380 m.23/1-a-b\"]", "zengin_orijinal_no": "[3, 75]"}
+         "kontrol_durumu": "🔴 GÜNCELLEME GEREKLİ", "zengin_dayanaklar": ["1380 m.23/1-a-b", "1380 su ürünleri kanunu 23. MADDE"]}
         """#))
         XCTAssertEqual(s.id, 600)
         XCTAssertNil(s.sevkMakami)
-        XCTAssertEqual(s.dayanaklar, ["1380 m.23/1-a-b"])
-        XCTAssertTrue(Metin.eslesir(s.arama, Metin.kelimeler("serpme ağı")))
+        XCTAssertEqual(s.durum, "red")
+        XCTAssertEqual(s.dayanaklar, ["1380 m.23/1-a-b", "1380 su ürünleri kanunu 23. MADDE"])
+        // Yasal madde ile aynı olan dayanak tekrar edilmez
+        XCTAssertEqual(s.tumDayanaklar, ["1380 Su Ürünleri Kanunu 23. madde", "1380 m.23/1-a-b"])
+        XCTAssertTrue(TRMetin.kelimeEslesir(normalMetin: s.aramaNormal, sorgu: "serpme ağın"))
+        XCTAssertFalse(TRMetin.kelimeEslesir(normalMetin: s.aramaNormal, sorgu: "zıpkın"))
+        XCTAssertEqual(s.aramaKaydi.etiket, "1380 Sy")
+        XCTAssertEqual(s.aramaKaydi.mevzuat, "1380 Su Ürünleri Kanunu 23. madde")
+    }
+
+    func testAramaEslesmesi() {
+        func es(_ fiil: String, _ q: String) -> Bool {
+            let qn = TRMetin.normal(q)
+            return MevzuatAramaMotoru.eslesir(kelimeler: TRMetin.kelimeler(TRMetin.normal(fiil)), sorgu: qn,
+                                              parcalar: qn.split(separator: " ").map(String.init))
+        }
+        XCTAssertTrue(es("CAN YELEĞİ BULUNDURMAMAK", "can"))
+        XCTAssertTrue(es("CAN YELEĞİ BULUNDURMAMAK", "yelek"))
+        XCTAssertTrue(es("ZIPKINLA AVCILIK", "zıp"))
+        XCTAssertTrue(es("IŞIKLA AVCILIK", "ışık avc"))
+        XCTAssertFalse(es("AMATÖR AVCILIKTA CANLI YEM", "yelek"))
+        XCTAssertFalse(es("TROL İLE AVCILIK", "gırgır"))
+        // 4 harften uzun parça kelime içinde de aranır
+        XCTAssertTrue(es("DIP TROLÜ", "rolü"))
+        XCTAssertEqual(TRMetin.normal("  İSKELE  Işık "), "iskele ışık")
+    }
+
+    func testAramaMotoru() {
+        let v5 = [
+            AramaKaydi(kaynak: .v5, id: "v1", fiil: "CAN YELEĞİ BULUNDURMAMAK", mevzuat: "Özel Tekneler Yönetmeliği"),
+            AramaKaydi(kaynak: .v5, id: "v2", fiil: "CAN", mevzuat: "X"),
+        ]
+        let sevk = [AramaKaydi(kaynak: .sevk, id: "s1", fiil: "CAN YELEĞİ YOK", mevzuat: "4922", etiket: "4922 Sy Kn")]
+        let motor = MevzuatAramaMotoru(eski: [], v5: v5, sevk: sevk)
+        let sonuc = motor.ara("can")
+        XCTAssertEqual(sonuc.map { $0.id }, ["v2", "v1", "s1"])
+        XCTAssertTrue(motor.ara("c").isEmpty)
+    }
+
+    func testResmiKaynak() {
+        let k = KaynakListesi.gomulu
+        XCTAssertFalse(k.mevzuat.isEmpty)
+        XCTAssertTrue(k.bul(mevzuat: "6/2 Tebliğ (2024/21)").ad.hasPrefix("6/2"))
+        XCTAssertTrue(k.bul(mevzuat: "1380 Su Ürünleri Kanunu-01 Ocak 2020 23.MADDE").ad.contains("1380"))
+        let bilinmeyen = k.bul(mevzuat: "Bilinmeyen düzenleme")
+        XCTAssertFalse(bilinmeyen.eslesti)
+        XCTAssertEqual(bilinmeyen.site, "mevzuat.gov.tr")
+        XCTAssertEqual(k.dogrulanmis1380("1380 Su Ürünleri Kanunu 36. MADDE")?.title, "1380 sayılı Su Ürünleri Kanunu – Madde 36")
+        XCTAssertEqual(k.dogrulanmis1380("1380 sy kanun EK 4. MADDE")?.title, "1380 sayılı Su Ürünleri Kanunu – Ek Madde 4")
+        XCTAssertNil(k.dogrulanmis1380("5237 TCK 33. MADDE"))
+    }
+
+    func testGosterim() {
+        XCTAssertEqual(AramaGosterim.maddeMetni("Madde 10/13"), "10/13")
+        XCTAssertEqual(AramaGosterim.maddeMetni("16"), "16")
+        XCTAssertEqual(AramaGosterim.kanunKisa("6/2 Tebliğ (2024/21)"), "6/2 Tebliğ")
+        XCTAssertEqual(TRMetin.buyukHarf("Zıpkın ağı"), "ZIPKIN AGI")
+        XCTAssertTrue(TRMetin.strcasecmp("abc", "ABD") < 0)
     }
 
     func testTurFotoAdresi() throws {

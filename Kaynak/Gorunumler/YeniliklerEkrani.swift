@@ -15,6 +15,7 @@ struct YeniliklerEkrani: View {
         }
         .listStyle(.insetGrouped)
         .navigationTitle("Yenilikler")
+        .onAppear { YenilikTakibi.goruldu() }
     }
 }
 

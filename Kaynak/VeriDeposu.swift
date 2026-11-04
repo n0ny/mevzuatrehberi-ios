@@ -25,13 +25,16 @@ final class VeriDeposu: ObservableObject {
     @Published private(set) var turler: [Tur] = []
     @Published private(set) var bolgeler: [Bolge] = []
     @Published private(set) var yenilikler: [Yenilik] = []
+    @Published private(set) var kaynakListesi: KaynakListesi = .gomulu
+    @Published private(set) var motor: MevzuatAramaMotoru = .bos
 
     @Published private(set) var sonKontrol: Date?
     @Published private(set) var guncelleniyor = false
     @Published private(set) var diskOkundu = false
     @Published var hataMesaji: String?
 
-    private var ihlalMaddeIdleri: [Int: [Int]] = [:]
+    private var ihlalBaglari: [(ihlalId: Int, maddeId: Int)] = []
+    private var motorEskidi = false
     private var hashler: [String: String] = [:]
     private let klasor: URL
     private static let sonKontrolAnahtari = "depo.sonKontrol"
@@ -74,6 +77,7 @@ final class VeriDeposu: ObservableObject {
                 uygula(b, k)
             }
         }
+        motoruKurGerekirse()
         diskOkundu = true
     }
 
@@ -100,7 +104,9 @@ final class VeriDeposu: ObservableObject {
         turler = []
         bolgeler = []
         yenilikler = []
-        ihlalMaddeIdleri = [:]
+        ihlalBaglari = []
+        kaynakListesi = .gomulu
+        motor = .bos
         hashler = [:]
         sonKontrol = nil
         hataMesaji = nil
@@ -112,7 +118,10 @@ final class VeriDeposu: ObservableObject {
     func guncelle(token: String) async -> GuncellemeSonucu {
         if guncelleniyor { return .tamam }
         guncelleniyor = true
-        defer { guncelleniyor = false }
+        defer {
+            motoruKurGerekirse()
+            guncelleniyor = false
+        }
 
         for b in Ayarlar.bolumler {
             do {
@@ -150,17 +159,16 @@ final class VeriDeposu: ObservableObject {
                 m[x.id] = x
             }
             mevzuatlar = m
-            maddeler = (v["maddeler"] ?? []).map { Madde($0, mevzuatlar: m) }
+            maddeler = (v["maddeler"] ?? []).map { Madde($0, mevzuatlar: m) }.filter { m[$0.mevzuatId] != nil }
             ihlaller = (v["ihlaller"] ?? []).map { Ihlal($0) }
-            var baglar: [Int: [Int]] = [:]
-            for s in v["ihlal_mevzuat"] ?? [] {
-                baglar[s.tamsayi("ihlal_id"), default: []].append(s.tamsayi("mevzuat_madde_id"))
-            }
-            ihlalMaddeIdleri = baglar
+            ihlalBaglari = (v["ihlal_mevzuat"] ?? []).map { (ihlalId: $0.tamsayi("ihlal_id"), maddeId: $0.tamsayi("mevzuat_madde_id")) }
+            motorEskidi = true
         case "fiil":
             fiiller = (v["fiiller"] ?? []).map { Fiil($0) }
+            motorEskidi = true
         case "sevk":
             sevkler = (v["kayitlar"] ?? []).map { SevkKaydi($0) }
+            motorEskidi = true
         case "yaptirim":
             yaptirimlar = (v["yaptirimlar"] ?? []).map { Yaptirim($0) }
         case "turler":
@@ -169,42 +177,50 @@ final class VeriDeposu: ObservableObject {
             bolgeler = (v["bolgeler"] ?? []).map { Bolge($0) }
         case "yenilikler":
             yenilikler = (v["yenilikler"] ?? []).map { Yenilik($0) }
+        case "kaynaklar":
+            if let satir = v["kaynaklar"]?.first,
+               let veri = try? JSONEncoder().encode(satir),
+               let liste = try? JSONDecoder().decode(KaynakListesi.self, from: veri) {
+                kaynakListesi = liste
+            }
         default:
             break
         }
         hashler[bolum] = kayit.h
     }
 
-    // MARK: - Sorgular
+    /// Mevzuat arama motorunu (mevzuat.php'deki üç kaynak) yeniden kurar.
+    private func motoruKurGerekirse() {
+        if !motorEskidi { return }
+        motorEskidi = false
 
-    func ilgiliMaddeler(ihlal: Ihlal) -> [Madde] {
-        let idler = Set(ihlalMaddeIdleri[ihlal.id] ?? [])
-        return maddeler.filter { idler.contains($0.id) }
-    }
+        var ihlalSozluk: [Int: Ihlal] = [:]
+        for i in ihlaller { ihlalSozluk[i.id] = i }
+        var maddeBaglari: [Int: [Int]] = [:]
+        for b in ihlalBaglari { maddeBaglari[b.maddeId, default: []].append(b.ihlalId) }
 
-    /// Mevzuat araması: bütün kelimeler geçen kayıtlar. Her türden sınırlı sayıda sonuç döner.
-    func ara(_ sorgu: String) -> (sonuclar: [AramaSonucu], kesildi: Bool) {
-        let k = Metin.kelimeler(sorgu)
-        if k.isEmpty { return ([], false) }
-        var sonuc: [AramaSonucu] = []
-        var kesildi = false
-
-        func ekle<T>(_ liste: [T], sinir: Int, arama: (T) -> String, donustur: (T) -> AramaSonucu) {
-            var sayac = 0
-            for x in liste where Metin.eslesir(arama(x), k) {
-                if sayac >= sinir {
-                    kesildi = true
-                    return
-                }
-                sonuc.append(donustur(x))
-                sayac += 1
+        var eski: [EskiAday] = []
+        for m in maddeler.sorted(by: { $0.id < $1.id }) {
+            let baglar = maddeBaglari[m.id] ?? []
+            let ihlalListesi: [Ihlal?] = baglar.isEmpty ? [nil] : baglar.map { ihlalSozluk[$0] }
+            for (sira, ihlal) in ihlalListesi.enumerated() {
+                var fiil = ihlal?.ad ?? ""
+                if fiil.isEmpty { fiil = m.baslik ?? "" }
+                let aciklama = ihlal?.aciklama ?? m.metin
+                let kayit = AramaKaydi(kaynak: .eski, id: "e\(m.id)-\(sira)", fiil: fiil,
+                                       mevzuat: m.mevzuatAdi ?? "", madde: m.no, aciklama: aciklama)
+                eski.append(EskiAday(ihlalNormal: ihlal.map { TRMetin.normal($0.ad) },
+                                     baslikNormal: m.baslik.map { TRMetin.normal($0) },
+                                     kayit: kayit))
             }
         }
 
-        ekle(fiiller, sinir: 25, arama: { $0.arama }, donustur: { AramaSonucu.fiil($0) })
-        ekle(maddeler, sinir: 15, arama: { $0.arama }, donustur: { AramaSonucu.madde($0) })
-        ekle(ihlaller, sinir: 10, arama: { $0.arama }, donustur: { AramaSonucu.ihlal($0) })
-        ekle(sevkler, sinir: 25, arama: { $0.arama }, donustur: { AramaSonucu.sevk($0) })
-        return (sonuc, kesildi)
+        let v5 = fiiller.filter { !$0.fiil.isEmpty }.map { f in
+            AramaKaydi(kaynak: .v5, id: "v\(f.id)", fiil: f.fiil, mevzuat: f.mevzuat, madde: f.madde ?? "",
+                       bent: f.bent ?? "", aciklama: f.aciklama ?? "", kapsam: f.kapsam ?? "",
+                       kaynakMetni: f.kaynak ?? "")
+        }
+        let sevk = sevkler.filter { !$0.gerekce.isEmpty }.map { $0.aramaKaydi }
+        motor = MevzuatAramaMotoru(eski: eski, v5: v5, sevk: sevk)
     }
 }

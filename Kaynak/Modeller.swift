@@ -102,27 +102,21 @@ struct Fiil: Identifiable, Hashable {
     }
 }
 
-struct SevkKaydi: Identifiable, Hashable {
+struct SevkKaydi: Identifiable {
     let id: Int
     let kategori: String
     let yasalMadde: String
     let gerekce: String
     let sevkMakami: String?
-    let kontrolDurumu: String?
-    let dogrulamaDurumu: String
-    let dogrulamaTarihi: String?
-    let dogrulamaNotu: String?
-    let resmiKaynakURL: URL?
-    let kontrolNotu: String?
-    let kayitTuru: String?
-    let yaptirimDogrulama: String?
+    let kontrolDurumu: String
+    let kontrolNotu: String
     let islemler: [String]
     let yaptirimlar: [String]
     let dayanaklar: [String]
     let kaynaklar: [String]
     let notlar: [String]
-    let eskiSevkler: [String]
-    let arama: String
+    /// sevk_islemleri.php AramaMetni (normalize edilmiş)
+    let aramaNormal: String
 
     init(_ s: Satir) {
         id = s.tamsayi("id")
@@ -130,21 +124,59 @@ struct SevkKaydi: Identifiable, Hashable {
         yasalMadde = s.metin("yasal_islem_maddesi")
         gerekce = s.metin("gerekce")
         sevkMakami = s.secimli("sevk_makami")
-        kontrolDurumu = s.secimli("kontrol_durumu")
-        dogrulamaDurumu = s.metin("dogrulama_durumu")
-        dogrulamaTarihi = s.secimli("dogrulama_tarihi")
-        dogrulamaNotu = s.secimli("dogrulama_notu")
-        resmiKaynakURL = Baglanti.url(s.secimli("resmi_kaynak_url"))
-        kontrolNotu = s.secimli("kontrol_notu")
-        kayitTuru = s.secimli("kayit_turu")
-        yaptirimDogrulama = s.secimli("yaptirim_dogrulama")
+        kontrolDurumu = s.metin("kontrol_durumu")
+        kontrolNotu = s.metin("kontrol_notu")
         islemler = s.liste("zengin_islemler")
         yaptirimlar = s.liste("zengin_yaptirimlar")
         dayanaklar = s.liste("zengin_dayanaklar")
         kaynaklar = s.liste("zengin_kaynaklar")
         notlar = s.liste("zengin_notlar")
-        eskiSevkler = s.liste("zengin_eski_sevkler")
-        arama = Metin.katla(Metin.birlestir([gerekce, kategori, yasalMadde, dayanaklar.joined(separator: " ")]))
+        let parcalar: [String] = [
+            kategori, yasalMadde, gerekce, sevkMakami ?? "", kontrolDurumu, kontrolNotu,
+            islemler.joined(separator: " | "), yaptirimlar.joined(separator: " | "),
+            dayanaklar.joined(separator: " | "), kaynaklar.joined(separator: " | "),
+            notlar.joined(separator: " | "),
+        ]
+        let aramaMetni = parcalar.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }.joined(separator: " | ")
+        aramaNormal = TRMetin.buyukHarf(aramaMetni)
+    }
+
+    /// statusType: 🟢 yeşil, 🔴 kırmızı, diğerleri sarı.
+    var durum: String {
+        let s = kontrolDurumu.uppercased()
+        if s.contains("🟢") { return "green" }
+        if s.contains("🔴") { return "red" }
+        return "yellow"
+    }
+
+    /// Yasal madde + ek dayanaklar (tekrarsız).
+    var tumDayanaklar: [String] {
+        var liste: [String] = []
+        if !yasalMadde.isEmpty { liste.append(yasalMadde) }
+        for d in dayanaklar {
+            let t = d.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !t.isEmpty && !liste.contains(where: { TRMetin.buyukHarf($0) == TRMetin.buyukHarf(t) }) {
+                liste.append(t)
+            }
+        }
+        return liste
+    }
+
+    /// Mevzuat aramasına giden kayıt (mevzuat.php 2b bölümü).
+    var aramaKaydi: AramaKaydi {
+        var dayanak: [String] = []
+        var gorulen = Set<String>()
+        for d in [yasalMadde] + dayanaklar {
+            let t = d.trimmingCharacters(in: .whitespacesAndNewlines)
+            if t.isEmpty { continue }
+            let n = TRMetin.normal(t)
+            if gorulen.contains(n) { continue }
+            gorulen.insert(n)
+            dayanak.append(t)
+        }
+        return AramaKaydi(kaynak: .sevk, id: "s\(id)", fiil: gerekce,
+                          mevzuat: yasalMadde.isEmpty ? (dayanak.first ?? "") : yasalMadde,
+                          etiket: kategori, dayanaklar: dayanak)
     }
 }
 
@@ -302,22 +334,5 @@ struct Yenilik: Identifiable, Hashable {
         aciklama = s.metin("aciklama")
         kategori = s.secimli("kategori") ?? "Duyuru"
         tarih = s.secimli("tarih")
-    }
-}
-
-/// Mevzuat aramasının tek bir sonucu.
-enum AramaSonucu: Identifiable {
-    case fiil(Fiil)
-    case madde(Madde)
-    case ihlal(Ihlal)
-    case sevk(SevkKaydi)
-
-    var id: String {
-        switch self {
-        case .fiil(let f): return "f\(f.id)"
-        case .madde(let m): return "m\(m.id)"
-        case .ihlal(let i): return "i\(i.id)"
-        case .sevk(let s): return "s\(s.id)"
-        }
     }
 }

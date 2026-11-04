@@ -130,6 +130,12 @@ extension Dictionary where Key == String, Value == JSONDeger {
 
     /// '["a","b"]' biçimindeki metni listeye çevirir; düz metinse tek maddelik liste verir.
     func liste(_ anahtar: String) -> [String] {
+        if let dizi = self[anahtar]?.dizi {
+            return dizi.compactMap { deger -> String? in
+                let m = (deger.metin ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                return m.isEmpty ? nil : m
+            }
+        }
         guard let s = secimli(anahtar) else { return [] }
         if s.hasPrefix("["), let veri = s.data(using: .utf8),
            let dizi = try? JSONDecoder().decode([JSONDeger].self, from: veri) {

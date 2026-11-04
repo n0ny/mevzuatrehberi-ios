@@ -10,6 +10,7 @@ struct MevzuatRehberiApp: App {
         URLCache.shared = URLCache(memoryCapacity: 32 * 1024 * 1024,
                                    diskCapacity: 300 * 1024 * 1024,
                                    directory: nil)
+        Renk.gezinmeCubugunuAyarla()
     }
 
     var body: some Scene {

@@ -1,174 +1,181 @@
 import SwiftUI
 
+/// dashboard.php — Ana sayfa.
 struct AnaEkran: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
-
-    private let sutunlar = [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)]
+    @State private var yeniSayisi = 0
 
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    ustKart
+                VStack(spacing: 0) {
+                    Kahraman(baslik: "Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋",
+                             aciklama: "Aradığın mevzuata hızlıca ulaş.")
 
-                    NavigationLink(destination: AramaEkrani()) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "magnifyingglass")
-                            Text("Mevzuatta ara: boğaz, trol, gırgır…")
-                            Spacer()
-                        }
-                        .foregroundColor(.secondary)
-                        .padding(14)
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(12)
-                    }
-                    .buttonStyle(.plain)
+                    VStack(alignment: .leading, spacing: 12) {
+                        durumSatiri
 
-                    if !depo.veriVar {
-                        indirmeDurumu
-                    } else if let h = depo.hataMesaji {
-                        UyariNotu(metin: h + " Telefondaki son veriler gösteriliyor.", sembol: "wifi.exclamationmark")
-                    }
-
-                    LazyVGrid(columns: sutunlar, spacing: 12) {
                         NavigationLink(destination: AramaEkrani()) {
-                            Kutucuk(baslik: "Mevzuat Ara", alt: "\(depo.fiiller.count + depo.maddeler.count) kayıt",
-                                    sembol: "text.magnifyingglass", renk: .blue)
-                        }
-                        NavigationLink(destination: SevkEkrani()) {
-                            Kutucuk(baslik: "Sevk İşlemleri", alt: "\(depo.sevkler.count) kayıt",
-                                    sembol: "arrow.triangle.branch", renk: .indigo)
-                        }
-                        NavigationLink(destination: YaptirimEkrani()) {
-                            Kutucuk(baslik: "İdari Yaptırımlar", alt: "\(depo.yaptirimlar.count) kayıt",
-                                    sembol: "turkishlirasign.circle", renk: .red)
+                            AnaKart(sembol: "magnifyingglass", baslik: "Mevzuat arama",
+                                    aciklama: "Kanun, yönetmelik, genelge ve diğer düzenlemelerde hızlı arama yap",
+                                    ana: true)
                         }
                         NavigationLink(destination: TurlerEkrani()) {
-                            Kutucuk(baslik: "Tür Kartları", alt: "\(depo.turler.count) tür",
-                                    sembol: "fish", renk: .teal)
-                        }
-                        NavigationLink(destination: BolgeEkrani()) {
-                            Kutucuk(baslik: "Bölge Yasakları", alt: "\(depo.bolgeler.count) bölge",
-                                    sembol: "map", renk: .green)
+                            AnaKart(sembol: "fish", baslik: "Tür kartları",
+                                    aciklama: "Asgari av boyu ve yasak dönemleri")
                         }
                         NavigationLink(destination: YeniliklerEkrani()) {
-                            Kutucuk(baslik: "Yenilikler", alt: "\(depo.yenilikler.count) duyuru",
-                                    sembol: "megaphone", renk: .orange)
+                            AnaKart(sembol: "text.bubble", baslik: "Yenilikler",
+                                    aciklama: "Eklenen mevzuat ve duyurular",
+                                    rozet: yeniSayisi > 0 ? "\(yeniSayisi) yeni" : nil)
                         }
+
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Bu uygulama resmî kurum uygulaması değildir. İçerikler mevzuata erişim ve referans amacıyla sunulmaktadır; güncel mevzuat metinleri ve yetkili kaynaklar esas alınmalıdır.")
+                                .font(.caption)
+                                .foregroundColor(Renk.soluk)
+                                .fixedSize(horizontal: false, vertical: true)
+                            if let u = URL(string: "https://sg.barisguresci.com.tr/kvkk.php") {
+                                Link("KVKK aydınlatma metni", destination: u)
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundColor(Renk.mavi)
+                            }
+                        }
+                        .padding(.top, 10)
                     }
                     .buttonStyle(.plain)
-
-                    Text(Notlar.resmiMetin)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 4)
+                    .padding(16)
                 }
-                .padding(16)
             }
-            .background(Color(.systemGroupedBackground).ignoresSafeArea())
+            .background(Renk.zemin.ignoresSafeArea())
             .navigationTitle("Mevzuat Rehberi")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    NavigationLink(destination: HesapEkrani()) {
-                        Image(systemName: "person.crop.circle")
-                    }
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    if depo.guncelleniyor {
-                        ProgressView()
-                    } else {
-                        Button {
-                            Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
+                    HStack(spacing: 14) {
+                        if depo.guncelleniyor {
+                            ProgressView().tint(.white)
+                        } else {
+                            Button {
+                                Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
+                            } label: {
+                                Image(systemName: "arrow.clockwise")
+                            }
+                        }
+                        NavigationLink(destination: HesapEkrani()) {
+                            Image(systemName: "person.crop.circle")
                         }
                     }
                 }
             }
+            .onAppear { yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
+            .onChange(of: depo.yenilikler.count) { _ in yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
         }
         .navigationViewStyle(.stack)
     }
 
-    private var ustKart: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Merhaba, \(oturum.kullanici?.ad ?? "")")
-                .font(.title3.weight(.semibold))
-                .foregroundColor(.white)
-            Group {
-                if depo.guncelleniyor {
-                    Text("İçerik güncelleniyor…")
-                } else if let s = depo.sonKontrol {
-                    Text("Son kontrol: \(Tarih.anYaz(s))")
-                } else {
-                    Text("İçerik henüz indirilmedi")
-                }
-            }
-            .font(.footnote)
-            .foregroundColor(.white.opacity(0.85))
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(18)
-        .background(
-            LinearGradient(gradient: Gradient(colors: [Color.accentColor, Color.accentColor.opacity(0.75)]),
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-        )
-        .cornerRadius(16)
-    }
-
     @ViewBuilder
-    private var indirmeDurumu: some View {
-        if depo.guncelleniyor {
-            HStack(spacing: 12) {
-                ProgressView()
-                Text("İçerik ilk kez indiriliyor. Bu işlem bir kez yapılır; sonra internetsiz de çalışır.")
-                    .font(.callout)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.secondarySystemBackground))
-            .cornerRadius(12)
-        } else {
-            VStack(alignment: .leading, spacing: 10) {
-                UyariNotu(metin: depo.hataMesaji ?? "İçerik henüz indirilmedi.", sembol: "wifi.exclamationmark")
-                Button("Tekrar dene") {
-                    Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
+    private var durumSatiri: some View {
+        if !depo.veriVar {
+            if depo.guncelleniyor {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("İçerik ilk kez indiriliyor. Bu işlem bir kez yapılır; sonra internetsiz de çalışır.")
+                        .font(.footnote)
+                        .foregroundColor(Renk.murekkep)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
-                .buttonStyle(.borderedProminent)
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .kart()
+            } else {
+                VStack(alignment: .leading, spacing: 10) {
+                    UyariKutusu(tur: .bilgi, baslik: "İçerik indirilemedi.",
+                                metin: depo.hataMesaji ?? "İnternet bağlantınızı kontrol edin.")
+                    Button("Tekrar dene") {
+                        Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .tint(Renk.lacivert)
+                }
             }
+        } else if let h = depo.hataMesaji {
+            UyariKutusu(tur: .bilgi, baslik: "Güncelleme yapılamadı.", metin: h + " Telefondaki son veriler gösteriliyor.")
+        } else if let s = depo.sonKontrol {
+            Text("İçerik son kontrol: \(Tarih.anYaz(s))")
+                .font(.caption)
+                .foregroundColor(Renk.soluk)
         }
     }
 }
 
-struct Kutucuk: View {
-    let baslik: String
-    let alt: String
+/// Ana sayfa kartı (dashboard.php .q).
+struct AnaKart: View {
     let sembol: String
-    let renk: Color
+    let baslik: String
+    let aciklama: String
+    var ana = false
+    var rozet: String? = nil
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        HStack(spacing: 14) {
             Sembol(ad: sembol, yedek: "doc.text")
-                .font(.system(size: 22, weight: .semibold))
-                .foregroundColor(renk)
-                .frame(width: 42, height: 42)
-                .background(renk.opacity(0.12))
-                .cornerRadius(12)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(baslik)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundColor(.primary)
-                    .lineLimit(2)
-                    .minimumScaleFactor(0.85)
-                Text(alt)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
+                .font(.system(size: 20, weight: .semibold))
+                .foregroundColor(ana ? .white : Renk.mavi)
+                .frame(width: 46, height: 46)
+                .background(ana ? Renk.lacivert : Renk.tint)
+                .cornerRadius(14)
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 8) {
+                    Text(baslik)
+                        .font(.headline)
+                        .foregroundColor(Renk.murekkep)
+                    if let r = rozet {
+                        Text(r)
+                            .font(.caption2.weight(.bold))
+                            .foregroundColor(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Renk.mavi)
+                            .cornerRadius(999)
+                    }
+                }
+                Text(aciklama)
+                    .font(.footnote)
+                    .foregroundColor(Renk.soluk)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
             }
+            Spacer(minLength: 0)
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Renk.soluk)
         }
-        .frame(maxWidth: .infinity, minHeight: 110, alignment: .topLeading)
-        .padding(14)
-        .background(Color(.secondarySystemGroupedBackground))
-        .cornerRadius(16)
+        .padding(16)
+        .kart(vurgulu: ana)
+        .shadow(color: ana ? Color.black.opacity(0.06) : .clear, radius: 10, x: 0, y: 4)
+    }
+}
+
+/// "Yeni" işareti: telefonda kişiye özel tutulur (sitedeki yenilik_gorme mantığı).
+enum YenilikTakibi {
+    private static let anahtar = "yenilik.sonGorme"
+
+    static func yeniSayisi(_ liste: [Yenilik]) -> Int {
+        let sinir: Date
+        if let son = UserDefaults.standard.object(forKey: anahtar) as? Date {
+            sinir = son
+        } else {
+            sinir = Date().addingTimeInterval(-14 * 86400)
+        }
+        return liste.filter { y in
+            guard let t = Tarih.tarihOku(y.tarih) else { return false }
+            return t > sinir
+        }.count
+    }
+
+    static func goruldu() {
+        UserDefaults.standard.set(Date(), forKey: anahtar)
     }
 }

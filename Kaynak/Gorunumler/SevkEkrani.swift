@@ -1,183 +1,203 @@
 import SwiftUI
 
+/// sevk_islemleri.php — Sevk işlemleri sayfasının karşılığı.
 struct SevkEkrani: View {
     @EnvironmentObject var depo: VeriDeposu
     @State private var sorgu = ""
 
     var body: some View {
-        let kelimeler = Metin.kelimeler(sorgu)
-        List {
-            if kelimeler.isEmpty {
-                Section(header: Text("Kategoriler")) {
-                    ForEach(kategoriler) { k in
-                        NavigationLink(destination: SevkKategoriEkrani(kategori: k.ad)) {
-                            HStack {
-                                Text(k.ad)
-                                Spacer()
-                                Text("\(k.sayi)")
-                                    .font(.callout)
-                                    .foregroundColor(.secondary)
+        let q = sorgu.trimmingCharacters(in: .whitespacesAndNewlines)
+        let sonuc: [SevkKaydi] = q.isEmpty ? [] : depo.sevkler.filter { TRMetin.kelimeEslesir(normalMetin: $0.aramaNormal, sorgu: q) }
+        ScrollView {
+            VStack(spacing: 0) {
+                Kahraman(baslik: "Sevk işlemleri",
+                         aciklama: "İhlal, işlem, mevzuat, madde, kaynak veya sevk makamına göre ara.") {
+                    AramaKutusu(ipucu: "Örn. Zıpkın,ruhsat..", metin: $sorgu)
+                    HStack {
+                        if !q.isEmpty {
+                            Text("\(sonuc.count) sonuç")
+                        }
+                        Spacer()
+                        Text("\(depo.sevkler.count) toplam kayıt")
+                    }
+                    .font(.footnote)
+                    .foregroundColor(.white.opacity(0.8))
+                    .padding(.top, 2)
+                }
+
+                LazyVStack(alignment: .leading, spacing: 12) {
+                    guvenlikUyarisi
+
+                    if !q.isEmpty {
+                        if sonuc.isEmpty {
+                            VStack(spacing: 6) {
+                                Text("Sonuç bulunamadı")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundColor(Renk.murekkep)
+                                Text("Farklı bir kelime, kaynak veya sevk makamı deneyin.")
+                                    .font(.footnote)
+                                    .foregroundColor(Renk.soluk)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(20)
+                            .kart()
+                        } else {
+                            ForEach(sonuc) { x in
+                                SevkKarti(kayit: x, kaynaklar: depo.kaynakListesi)
                             }
                         }
                     }
+
+                    ResmiKaynakListesi(liste: depo.kaynakListesi)
+                        .padding(.top, 8)
                 }
-            } else {
-                let bulunan = depo.sevkler.filter { Metin.eslesir($0.arama, kelimeler) }
-                if bulunan.isEmpty {
-                    BosDurum(metin: "Sonuç bulunamadı. Soru yerine anahtar kelime yazın.", sembol: "magnifyingglass")
-                } else {
-                    Section(header: Text("\(bulunan.count) kayıt")) {
-                        ForEach(bulunan.prefix(150)) { s in
-                            NavigationLink(destination: SevkDetay(kayit: s)) {
-                                SevkSatiri(kayit: s)
-                            }
-                        }
-                    }
-                }
+                .padding(16)
             }
         }
-        .listStyle(.insetGrouped)
-        .searchable(text: $sorgu, placement: .navigationBarDrawer(displayMode: .always), prompt: "Fiil veya kanun ara")
-        .disableAutocorrection(true)
-        .navigationTitle("Sevk İşlemleri")
-    }
-
-    private var kategoriler: [KategoriSayisi] {
-        var sayac: [String: Int] = [:]
-        for s in depo.sevkler {
-            sayac[s.kategori, default: 0] += 1
-        }
-        return sayac.keys
-            .sorted { Metin.once($0, $1) }
-            .map { KategoriSayisi(ad: $0, sayi: sayac[$0] ?? 0) }
-    }
-}
-
-struct KategoriSayisi: Identifiable {
-    let ad: String
-    let sayi: Int
-    var id: String { ad }
-}
-
-struct SevkKategoriEkrani: View {
-    @EnvironmentObject var depo: VeriDeposu
-    let kategori: String
-    @State private var sorgu = ""
-
-    var body: some View {
-        let kelimeler = Metin.kelimeler(sorgu)
-        let liste = depo.sevkler.filter {
-            $0.kategori == kategori && (kelimeler.isEmpty || Metin.eslesir($0.arama, kelimeler))
-        }
-        List {
-            if liste.isEmpty {
-                BosDurum(metin: "Sonuç bulunamadı.", sembol: "magnifyingglass")
-            } else {
-                Section(header: Text("\(liste.count) kayıt")) {
-                    ForEach(liste) { s in
-                        NavigationLink(destination: SevkDetay(kayit: s)) {
-                            SevkSatiri(kayit: s)
-                        }
-                    }
-                }
-            }
-        }
-        .listStyle(.insetGrouped)
-        .searchable(text: $sorgu, prompt: "Bu kategoride ara")
-        .disableAutocorrection(true)
-        .navigationTitle(kategori)
+        .background(Renk.zemin.ignoresSafeArea())
+        .navigationTitle("Mevzuat Rehberi")
         .navigationBarTitleDisplayMode(.inline)
     }
-}
 
-struct SevkSatiri: View {
-    let kayit: SevkKaydi
-
-    var renk: Color {
-        switch kayit.dogrulamaDurumu {
-        case "green": return .green
-        case "red": return .red
-        default: return .orange
+    private var guvenlikUyarisi: some View {
+        let a = Text("Bu bölüm ")
+        let b = Text("mevzuata erişim ve referans amacıyla").bold()
+        let c = Text(" hazırlanmıştır. Bazı kayıtlar geçmiş düzenlemelere veya kaynak sevk kayıtlarına dayanabilir. İşlem tesis edilmeden önce ")
+        let d = Text("yürürlükteki güncel mevzuatın ve yetkili resmî kaynakların kontrol edilmesi gerekir.").bold()
+        let e = Text(" Bu içerik ")
+        let f = Text("resmî talimat, emir veya bağlayıcı hukuki görüş niteliğinde değildir.").bold()
+        let ilk: Text = a + b + c
+        let metin: Text = ilk + d + e + f
+        return VStack(alignment: .leading, spacing: 8) {
+            Label("Mevzuat referans uyarısı", systemImage: "exclamationmark.shield")
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(Renk.amber)
+            metin
+                .font(.footnote)
+                .foregroundColor(Renk.murekkep)
+                .fixedSize(horizontal: false, vertical: true)
         }
-    }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 5) {
-            Text(kayit.gerekce)
-                .font(.subheadline)
-                .lineLimit(3)
-            HStack(spacing: 6) {
-                Circle().fill(renk).frame(width: 8, height: 8)
-                Text(kayit.yasalMadde)
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    .lineLimit(1)
-            }
-        }
-        .padding(.vertical, 3)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Renk.amberZemin)
+        .cornerRadius(14)
     }
 }
 
-struct SevkDetay: View {
+/// Sevk kaydı kartı (sevk_islemleri.php card).
+struct SevkKarti: View {
     let kayit: SevkKaydi
+    let kaynaklar: KaynakListesi
+    @State private var acik = false
 
     var body: some View {
-        List {
-            Section {
-                Text(kayit.gerekce)
-                    .font(.headline)
-                    .textSelection(.enabled)
-                    .fixedSize(horizontal: false, vertical: true)
-                DurumRozeti(durum: kayit.dogrulamaDurumu, metin: kayit.kontrolDurumu)
-                if let n = kayit.kontrolNotu {
-                    Text(n)
-                        .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .fixedSize(horizontal: false, vertical: true)
+        VStack(alignment: .leading, spacing: 0) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { acik.toggle() }
+            } label: {
+                HStack(alignment: .top, spacing: 10) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text(kayit.gerekce)
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(Renk.murekkep)
+                            .multilineTextAlignment(.leading)
+                            .fixedSize(horizontal: false, vertical: true)
+                        EtiketSatiri(kategori: kayit.kategori, sevkMakami: kayit.sevkMakami)
+                    }
+                    Spacer(minLength: 0)
+                    Image(systemName: "chevron.down")
+                        .rotationEffect(.degrees(acik ? 180 : 0))
+                        .foregroundColor(Renk.soluk)
+                        .padding(.top, 4)
                 }
+                .padding(14)
+                .contentShape(Rectangle())
             }
+            .buttonStyle(.plain)
 
-            Section(header: Text("Yasal işlem")) {
-                BilgiSatiri(baslik: "Kategori", deger: kayit.kategori)
-                BilgiSatiri(baslik: "Yasal işlem maddesi", deger: kayit.yasalMadde)
-                BilgiSatiri(baslik: "Sevk makamı", deger: kayit.sevkMakami ?? "Belirtilmemiş")
-                BilgiSatiri(baslik: "Yaptırım durumu", deger: kayit.yaptirimDogrulama)
-            }
-
-            liste("Mevzuat dayanakları", kayit.dayanaklar)
-            liste("Yaptırımlar", kayit.yaptirimlar)
-            liste("İşlemler", kayit.islemler)
-            liste("Kaynaklar", kayit.kaynaklar)
-            liste("Notlar", kayit.notlar)
-            liste("Önceki sevk makamları", kayit.eskiSevkler)
-
-            if kayit.dogrulamaNotu != nil || kayit.dogrulamaTarihi != nil || kayit.resmiKaynakURL != nil {
-                Section(header: Text("Doğrulama")) {
-                    BilgiSatiri(baslik: "Tarih", deger: Tarih.gunYaz(kayit.dogrulamaTarihi))
-                    BilgiSatiri(baslik: "Not", deger: kayit.dogrulamaNotu)
-                    if let u = kayit.resmiKaynakURL {
-                        KaynakBaglantisi(baslik: "Resmî metni aç", url: u)
+            if acik {
+                VStack(alignment: .leading, spacing: 10) {
+                    AcilirBolum(sembol: "book", baslik: "Mevzuat dayanağını göster") {
+                        Text("Bu kayıt hangi mevzuata dayandırılmış?")
+                            .font(.footnote.weight(.semibold))
+                            .foregroundColor(Renk.soluk)
+                        SevkDayanaklari(dayanaklar: kayit.tumDayanaklar, kaynaklar: kaynaklar)
+                        UyariKutusu(tur: .bilgi, baslik: "Kontrol gerekli:",
+                                    metin: "Bu kayıt kaynak bilgisine dayanmaktadır. Güncel mevzuat, madde/fiil eşleştirmesi, yetki ve sevk makamı işlem tesis edilmeden önce ayrıca doğrulanmalıdır.")
+                    }
+                    AcilirBolum(sembol: "mappin.and.ellipse", baslik: "İşlem / sevk bilgisini göster") {
+                        islemBilgisi
                     }
                 }
+                .padding(.horizontal, 14)
+                .padding(.bottom, 14)
             }
-
-            Section {
-                UyariNotu(metin: Notlar.resmiMetin)
-            }
-            .listRowBackground(Color.clear)
-            .listRowInsets(EdgeInsets())
         }
-        .listStyle(.insetGrouped)
-        .navigationTitle("Sevk Kaydı")
-        .navigationBarTitleDisplayMode(.inline)
+        .kart(vurgulu: acik)
     }
 
     @ViewBuilder
-    private func liste(_ baslik: String, _ maddeler: [String]) -> some View {
-        if !maddeler.isEmpty {
-            Section(header: Text(baslik)) {
-                MaddeListesi(maddeler: maddeler)
+    private var islemBilgisi: some View {
+        if kayit.durum == "red" {
+            Text("İşlem ve sevk bilgisi")
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Renk.soluk)
+            IslemSatiri(baslik: "Sevk yeri / makamı", metin: kayit.sevkMakami ?? "Kaynak kaydında belirtilmemiş.")
+        } else {
+            Text("Bu kayıtta kaynak olarak bulunan işlem ve sevk bilgileri")
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Renk.soluk)
+            if let m = kayit.sevkMakami {
+                IslemSatiri(baslik: "Kaynak kaydındaki sevk makamı", metin: m)
+            } else {
+                IslemSatiri(baslik: "Sevk makamı", metin: "Kaynak kaydında belirtilmemiş.")
+            }
+            ForEach(Array(kayit.islemler.enumerated()), id: \.offset) { _, v in
+                IslemSatiri(baslik: "Kaynak işlem bilgisi", metin: v)
+            }
+            ForEach(Array(kayit.yaptirimlar.enumerated()), id: \.offset) { _, v in
+                IslemSatiri(baslik: "Kaynak yaptırım / işlem", metin: v)
             }
         }
+        UyariKutusu(tur: .dikkat, baslik: "Dikkat:",
+                    metin: "Bu sevk yeri/makamı mevcut kaynak kaydından alınmıştır. Güncel mevzuat, yetki ve somut olay koşulları doğrulanmadan kesin sevk talimatı olarak kabul edilmemelidir.")
+    }
+}
+
+struct EtiketSatiri: View {
+    let kategori: String
+    let sevkMakami: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if !kategori.isEmpty {
+                Hap(metin: kategori)
+            }
+            if let m = sevkMakami {
+                Hap(metin: "Sevk: " + m, renk: Renk.yesil, zemin: Renk.yesilZemin)
+            }
+        }
+    }
+}
+
+struct IslemSatiri: View {
+    let baslik: String
+    let metin: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(baslik)
+                .font(.caption.weight(.semibold))
+                .foregroundColor(Renk.soluk)
+            Text(metin)
+                .font(.footnote)
+                .foregroundColor(Renk.murekkep)
+                .textSelection(.enabled)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Renk.ikincil)
+        .cornerRadius(10)
     }
 }
