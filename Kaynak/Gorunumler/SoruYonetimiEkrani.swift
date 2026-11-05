@@ -106,7 +106,7 @@ struct SoruSetiAyrintisi: Codable {
     let kisiler: [Kisi]
     let katilmayanlar: [Katilmayan]
 
-    var yayinda: Bool { set.durumTuru == "yayinda" }
+    var yayinda: Bool { return self.set.durumTuru == "yayinda" }
 }
 
 enum GunBicimi {
