@@ -1,9 +1,10 @@
 import SwiftUI
-import SafariServices
 
 /// Uygulamanın alt sekmeleri.
 struct AnaSekmeler: View {
     @EnvironmentObject var depo: VeriDeposu
+    @EnvironmentObject var foto: ProfilFotografi
+    @Environment(\.colorScheme) private var sema
     @State private var secili = 0
     @State private var yeniSayisi = 0
 
@@ -34,7 +35,13 @@ struct AnaSekmeler: View {
                 .tag(3)
             NavigationView { HesapEkrani() }
                 .navigationViewStyle(.stack)
-                .tabItem { Label("Hesabım", systemImage: "person.crop.circle") }
+                .tabItem {
+                    Label {
+                        Text("Hesabım")
+                    } icon: {
+                        hesapSimgesi
+                    }
+                }
                 .tag(4)
         }
         .onAppear { rozetiGuncelle() }
@@ -46,6 +53,15 @@ struct AnaSekmeler: View {
                 rozetiGuncelle()
             }
         }
+    }
+
+    /// Profil fotoğrafı varsa sekmede o görünür.
+    private var hesapSimgesi: Image {
+        let vurgu = UIColor(onaltilik: sema == .dark ? 0x7FB4EA : 0x0B2E4A)
+        if let r = foto.sekmeSimgesi(secili: secili == 4, vurgu: vurgu) {
+            return Image(uiImage: r).renderingMode(.original)
+        }
+        return Image(systemName: "person.crop.circle")
     }
 
     private func rozetiGuncelle() {
@@ -60,31 +76,17 @@ struct AnaEkran: View {
     @Environment(\.colorScheme) private var sema
     @AppStorage("gorunum") private var gorunum = "otomatik"
     @State private var yeniSayisi = 0
-    @State private var webSayfasi: WebSayfasi?
-    @State private var panelHatasi: String?
+    @State private var icSayfa: IcWebSayfasi?
 
     var body: some View {
         YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 Kahraman(baslik: "Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋",
-                         aciklama: "Aradığın mevzuata hızlıca ulaş.")
+                         aciklama: "Aradığın mevzuata hızlıca ulaş.",
+                         tekSatir: true)
 
                 VStack(alignment: .leading, spacing: 12) {
                     durumSatiri
-
-                    if oturum.yonetici {
-                        HStack(spacing: 10) {
-                            YoneticiDugmesi(sembol: "bubble.left.and.bubble.right", baslik: "Destek paneli") {
-                                PanelGecisi.ac("destek", oturum: oturum) { s, h in webSayfasi = s; panelHatasi = h }
-                            }
-                            YoneticiDugmesi(sembol: "gearshape", baslik: "Yönetim paneli") {
-                                PanelGecisi.ac("admin", oturum: oturum) { s, h in webSayfasi = s; panelHatasi = h }
-                            }
-                        }
-                        if let h = panelHatasi {
-                            UyariKutusu(tur: .dikkat, baslik: "Panel açılamadı.", metin: h)
-                        }
-                    }
 
                     NavigationLink(destination: AramaEkrani()) {
                         AnaKart(sembol: "magnifyingglass", baslik: "Mevzuat arama",
@@ -108,7 +110,8 @@ struct AnaEkran: View {
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                         Button {
-                            webSayfasi = WebSayfasi(baslik: "KVKK aydınlatma metni", yol: "kvkk.php")
+                            icSayfa = IcWebSayfasi(baslik: "KVKK aydınlatma metni",
+                                                   url: Ayarlar.siteAdresi.appendingPathComponent("kvkk.php"))
                         } label: {
                             Text("KVKK aydınlatma metni")
                                 .font(.caption.weight(.semibold))
@@ -127,20 +130,17 @@ struct AnaEkran: View {
         .markaBasligi()
         .toolbar {
             ToolbarItem(placement: .navigationBarTrailing) {
-                HStack(spacing: 16) {
-                    Button {
-                        // Sitedeki ay simgesi: koyudaysa gündüze, açıktaysa geceye geçer.
-                        gorunum = sema == .dark ? "acik" : "koyu"
-                    } label: {
-                        Image(systemName: sema == .dark ? "sun.max" : "moon")
-                            .foregroundColor(.white)
-                    }
+                Button {
+                    // Sitedeki ay simgesi: koyudaysa gündüze, açıktaysa geceye geçer.
+                    gorunum = sema == .dark ? "acik" : "koyu"
+                } label: {
+                    Image(systemName: sema == .dark ? "sun.max" : "moon")
+                        .foregroundColor(.white)
                 }
             }
         }
-        .sheet(item: $webSayfasi) { s in
-            SafariGorunumu(url: s.url)
-                .ignoresSafeArea()
+        .fullScreenCover(item: $icSayfa) { s in
+            IcWebEkrani(sayfa: s)
         }
         .onAppear { yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
         .onChange(of: depo.yenilikler.count) { _ in yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
@@ -229,51 +229,6 @@ struct AnaKart: View {
     }
 }
 
-/// Site sayfası — uygulama içinde Safari ile açılır.
-struct WebSayfasi: Identifiable {
-    let id = UUID()
-    let url: URL
-
-    init(url: URL) {
-        self.url = url
-    }
-
-    init(baslik: String, yol: String) {
-        self.url = Ayarlar.siteAdresi.appendingPathComponent(yol)
-    }
-}
-
-/// Yönetim ve destek paneline şifresiz geçiş: uygulamadaki giriş tek kullanımlık kodla siteye taşınır.
-@MainActor
-enum PanelGecisi {
-    static func ac(_ hedef: String, oturum: Oturum, sonuc: @escaping (WebSayfasi?, String?) -> Void) {
-        guard let t = oturum.token else { return }
-        Task {
-            do {
-                let u = try await APIIstemci.webOturum(hedef: hedef, token: t)
-                sonuc(WebSayfasi(url: u), nil)
-            } catch let e as APIHatasi {
-                sonuc(nil, e.aciklama)
-            } catch {
-                sonuc(nil, APIHatasi.baglanti.aciklama)
-            }
-        }
-    }
-}
-
-struct SafariGorunumu: UIViewControllerRepresentable {
-    let url: URL
-
-    func makeUIViewController(context: Context) -> SFSafariViewController {
-        let v = SFSafariViewController(url: url)
-        v.preferredControlTintColor = UIColor(onaltilik: 0x0B2E4A)
-        v.dismissButtonStyle = .close
-        return v
-    }
-
-    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
-}
-
 struct YoneticiDugmesi: View {
     let sembol: String
     let baslik: String
@@ -290,9 +245,11 @@ struct YoneticiDugmesi: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 11)
-            .foregroundColor(Renk.lacivert)
+            // Gündüz lacivert, gecede açık mavi yazı (gece modunda okunur).
+            .foregroundColor(Renk.mavi)
             .background(Renk.tint)
             .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Renk.mavi.opacity(0.25), lineWidth: 1))
         }
         .buttonStyle(.plain)
     }

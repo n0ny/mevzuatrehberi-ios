@@ -3,31 +3,95 @@ import UIKit
 import PhotosUI
 
 /// Hesabım'daki profil fotoğrafı. Yalnızca bu telefonda saklanır, sunucuya gönderilmez.
-enum ProfilFotografi {
-    private static var dosya: URL {
+/// Her kullanıcının fotoğrafı ayrı dosyadadır; çıkış yapınca silinmez,
+/// aynı hesapla tekrar girince geri gelir. Başka hesapla girilirse görünmez.
+@MainActor
+final class ProfilFotografi: ObservableObject {
+    static let paylasilan = ProfilFotografi()
+
+    @Published private(set) var resim: UIImage?
+    private var kullaniciId: Int?
+
+    private static var klasor: URL {
         let destek = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         try? FileManager.default.createDirectory(at: destek, withIntermediateDirectories: true)
-        return destek.appendingPathComponent("profil-foto.jpg")
+        return destek
     }
 
-    static func oku() -> UIImage? {
-        guard let d = try? Data(contentsOf: dosya) else { return nil }
-        return UIImage(data: d)
+    private static func dosya(_ id: Int) -> URL {
+        return klasor.appendingPathComponent("profil-foto-\(id).jpg")
     }
 
-    static func kaydet(_ resim: UIImage) {
-        let enFazla: CGFloat = 600
-        let olcek = min(1, enFazla / max(resim.size.width, resim.size.height))
-        let boyut = CGSize(width: resim.size.width * olcek, height: resim.size.height * olcek)
-        let cizici = UIGraphicsImageRenderer(size: boyut)
-        let kucuk = cizici.image { _ in resim.draw(in: CGRect(origin: .zero, size: boyut)) }
-        if let d = kucuk.jpegData(compressionQuality: 0.82) {
-            try? d.write(to: dosya, options: [.atomic, .completeFileProtection])
+    /// Önceki sürümün tek dosyası (kullanıcıya bağlı değildi).
+    private static var eskiDosya: URL {
+        return klasor.appendingPathComponent("profil-foto.jpg")
+    }
+
+    /// Giriş yapan kullanıcı değişince çağrılır.
+    func kullaniciAyarla(_ id: Int?) {
+        if id == kullaniciId && (id == nil || resim != nil) { return }
+        kullaniciId = id
+        guard let id = id else {
+            resim = nil
+            return
+        }
+        let hedef = ProfilFotografi.dosya(id)
+        let fm = FileManager.default
+        if !fm.fileExists(atPath: hedef.path), fm.fileExists(atPath: ProfilFotografi.eskiDosya.path) {
+            try? fm.moveItem(at: ProfilFotografi.eskiDosya, to: hedef)
+        }
+        if let d = try? Data(contentsOf: hedef) {
+            resim = UIImage(data: d)
+        } else {
+            resim = nil
         }
     }
 
-    static func sil() {
-        try? FileManager.default.removeItem(at: dosya)
+    func kaydet(_ yeni: UIImage) {
+        guard let id = kullaniciId else { return }
+        let enFazla: CGFloat = 600
+        let olcek = min(1, enFazla / max(yeni.size.width, yeni.size.height))
+        let boyut = CGSize(width: yeni.size.width * olcek, height: yeni.size.height * olcek)
+        let bicim = UIGraphicsImageRendererFormat.default()
+        bicim.scale = 1
+        let kucuk = UIGraphicsImageRenderer(size: boyut, format: bicim).image { _ in
+            yeni.draw(in: CGRect(origin: .zero, size: boyut))
+        }
+        if let d = kucuk.jpegData(compressionQuality: 0.82) {
+            try? d.write(to: ProfilFotografi.dosya(id), options: [.atomic, .completeFileProtectionUntilFirstUserAuthentication])
+            resim = UIImage(data: d)
+        }
+    }
+
+    func sil() {
+        guard let id = kullaniciId else { return }
+        try? FileManager.default.removeItem(at: ProfilFotografi.dosya(id))
+        resim = nil
+    }
+
+    /// Alttaki "Hesabım" sekmesi için yuvarlak küçük fotoğraf.
+    func sekmeSimgesi(secili: Bool, vurgu: UIColor) -> UIImage? {
+        guard let r = resim else { return nil }
+        let boyut: CGFloat = 28
+        let cizgi: CGFloat = secili ? 2 : 0
+        let alan = CGRect(x: 0, y: 0, width: boyut, height: boyut)
+        let gorsel = UIGraphicsImageRenderer(size: alan.size).image { _ in
+            let ic = alan.insetBy(dx: cizgi, dy: cizgi)
+            UIBezierPath(ovalIn: ic).addClip()
+            let oran = max(ic.width / r.size.width, ic.height / r.size.height)
+            let w = r.size.width * oran
+            let h = r.size.height * oran
+            r.draw(in: CGRect(x: ic.midX - w / 2, y: ic.midY - h / 2, width: w, height: h))
+        }
+        guard secili else { return gorsel.withRenderingMode(.alwaysOriginal) }
+        let halkali = UIGraphicsImageRenderer(size: alan.size).image { _ in
+            gorsel.draw(in: alan)
+            let halka = UIBezierPath(ovalIn: alan.insetBy(dx: cizgi / 2, dy: cizgi / 2))
+            halka.lineWidth = cizgi
+            vurgu.setStroke()
+            halka.stroke()
+        }
+        return halkali.withRenderingMode(.alwaysOriginal)
     }
 }
 

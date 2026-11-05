@@ -10,14 +10,16 @@ struct GirisEkrani: View {
     @State private var sifreGorunsun = false
     @State private var bekliyor = false
     @State private var hata: String?
-    @State private var webSayfasi: WebSayfasi?
+    @State private var bilgi: String?
+    @State private var kayitAcik = false
+    @State private var sifreUnuttumAcik = false
 
     private enum Alan { case kullanici, sifre }
     @FocusState private var odak: Alan?
 
     var body: some View {
         ZStack {
-            arkaPlan
+            GirisArkaPlani()
 
             ScrollView {
                 VStack(spacing: 22) {
@@ -37,18 +39,14 @@ struct GirisEkrani: View {
                     .padding(.top, 44)
 
                     VStack(spacing: 14) {
+                        if let b = bilgi {
+                            CamMesaj(metin: b, hata: false)
+                        }
                         if let h = hata {
-                            Text(h)
-                                .font(.callout)
-                                .foregroundColor(.white)
-                                .multilineTextAlignment(.center)
-                                .padding(12)
-                                .frame(maxWidth: .infinity)
-                                .background(Color(UIColor(onaltilik: 0xB42335)).opacity(0.85))
-                                .cornerRadius(12)
+                            CamMesaj(metin: h, hata: true)
                         }
 
-                        alan(simge: "person") {
+                        CamAlan(simge: "person") {
                             TextField("", text: $kullanici, prompt: Text("Kullanıcı Adı").foregroundColor(.white.opacity(0.6)))
                                 .textContentType(.username)
                                 .textInputAutocapitalization(.never)
@@ -58,7 +56,7 @@ struct GirisEkrani: View {
                                 .onSubmit { odak = .sifre }
                         }
 
-                        alan(simge: "lock") {
+                        CamAlan(simge: "lock") {
                             HStack {
                                 Group {
                                     if sifreGorunsun {
@@ -73,62 +71,36 @@ struct GirisEkrani: View {
                                 .submitLabel(.go)
                                 .focused($odak, equals: .sifre)
                                 .onSubmit { girisYap() }
-                                Button {
-                                    sifreGorunsun.toggle()
-                                } label: {
-                                    Image(systemName: sifreGorunsun ? "eye.slash" : "eye")
-                                        .foregroundColor(.white.opacity(0.75))
-                                }
-                                .buttonStyle(.plain)
+                                GozDugmesi(acik: $sifreGorunsun)
                             }
                         }
 
                         HStack {
                             Spacer()
                             Button("Şifremi unuttum?") {
-                                webSayfasi = WebSayfasi(baslik: "Şifremi unuttum", yol: "forgot_password.php")
+                                sifreUnuttumAcik = true
                             }
                             .font(.footnote.weight(.semibold))
                             .foregroundColor(.white.opacity(0.9))
                         }
 
-                        Button(action: girisYap) {
-                            HStack {
-                                if bekliyor {
-                                    ProgressView().tint(.white)
-                                }
-                                Text(bekliyor ? "Giriş yapılıyor…" : "Giriş Yap")
-                                    .fontWeight(.bold)
-                            }
-                            .frame(maxWidth: .infinity)
-                            .padding(15)
-                            .foregroundColor(.white)
-                            .background(
-                                LinearGradient(gradient: Gradient(colors: [Color(UIColor(onaltilik: 0x1E88E5)),
-                                                                           Color(UIColor(onaltilik: 0x0B5CAD))]),
-                                               startPoint: .leading, endPoint: .trailing)
-                                    .opacity(girisYapilabilir ? 1 : 0.5)
-                            )
-                            .cornerRadius(14)
-                        }
-                        .disabled(!girisYapilabilir || bekliyor)
+                        CamAnaDugme(baslik: bekliyor ? "Giriş yapılıyor…" : "Giriş Yap",
+                                    bekliyor: bekliyor,
+                                    etkin: girisYapilabilir,
+                                    eylem: girisYap)
 
                         HStack(spacing: 4) {
                             Text("Hesabın yok mu?")
                                 .foregroundColor(.white.opacity(0.8))
                             Button("Kayıt ol") {
-                                webSayfasi = WebSayfasi(baslik: "Kayıt ol", yol: "register.php")
+                                kayitAcik = true
                             }
                             .foregroundColor(.white)
                             .font(.footnote.weight(.bold))
                         }
                         .font(.footnote)
                     }
-                    .padding(20)
-                    .background(.ultraThinMaterial)
-                    .environment(\.colorScheme, .dark)
-                    .cornerRadius(22)
-                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.18), lineWidth: 1))
+                    .camKart()
 
                     Text(Notlar.resmiDegil)
                         .font(.caption2)
@@ -139,39 +111,15 @@ struct GirisEkrani: View {
                 .padding(.bottom, 30)
             }
         }
-        .sheet(item: $webSayfasi) { s in
-            SafariGorunumu(url: s.url).ignoresSafeArea()
-        }
-    }
-
-    private var arkaPlan: some View {
-        GeometryReader { g in
-            ZStack {
-                Image("GirisArkaplan")
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: g.size.width, height: g.size.height)
-                    .clipped()
-                LinearGradient(gradient: Gradient(colors: [Color(red: 2 / 255, green: 20 / 255, blue: 38 / 255).opacity(0.35),
-                                                           Color(red: 2 / 255, green: 13 / 255, blue: 25 / 255).opacity(0.78)]),
-                               startPoint: .top, endPoint: .bottom)
+        .sheet(isPresented: $kayitAcik) {
+            KayitEkrani { mesaj in
+                hata = nil
+                bilgi = mesaj
             }
         }
-        .ignoresSafeArea()
-    }
-
-    private func alan<Icerik: View>(simge: String, @ViewBuilder icerik: () -> Icerik) -> some View {
-        HStack(spacing: 10) {
-            Image(systemName: simge)
-                .foregroundColor(.white.opacity(0.8))
-                .frame(width: 22)
-            icerik()
-                .foregroundColor(.white)
+        .sheet(isPresented: $sifreUnuttumAcik) {
+            SifremiUnuttumEkrani()
         }
-        .padding(14)
-        .background(Color.white.opacity(0.10))
-        .cornerRadius(14)
-        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.22), lineWidth: 1))
     }
 
     private var girisYapilabilir: Bool {
@@ -182,6 +130,7 @@ struct GirisEkrani: View {
         guard girisYapilabilir, !bekliyor else { return }
         odak = nil
         hata = nil
+        bilgi = nil
         bekliyor = true
         let k = kullanici.trimmingCharacters(in: .whitespaces)
         let s = sifre
@@ -200,5 +149,126 @@ struct GirisEkrani: View {
             }
             bekliyor = false
         }
+    }
+}
+
+// MARK: - Giriş, kayıt ve şifre ekranlarının ortak parçaları
+
+/// Arka plan görseli + koyu geçiş (sitedeki giriş sayfası).
+struct GirisArkaPlani: View {
+    var body: some View {
+        GeometryReader { g in
+            ZStack {
+                Image("GirisArkaplan")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: g.size.width, height: g.size.height)
+                    .clipped()
+                LinearGradient(gradient: Gradient(colors: [Color(red: 2 / 255, green: 20 / 255, blue: 38 / 255).opacity(0.35),
+                                                           Color(red: 2 / 255, green: 13 / 255, blue: 25 / 255).opacity(0.78)]),
+                               startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
+/// Cam görünümlü giriş alanı (simge + yazı alanı).
+struct CamAlan<Icerik: View>: View {
+    let simge: String
+    @ViewBuilder let icerik: () -> Icerik
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Image(systemName: simge)
+                .foregroundColor(.white.opacity(0.8))
+                .frame(width: 22)
+            icerik()
+                .foregroundColor(.white)
+        }
+        .padding(14)
+        .background(Color.white.opacity(0.10))
+        .cornerRadius(14)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.22), lineWidth: 1))
+    }
+}
+
+struct GozDugmesi: View {
+    @Binding var acik: Bool
+
+    var body: some View {
+        Button {
+            acik.toggle()
+        } label: {
+            Image(systemName: acik ? "eye.slash" : "eye")
+                .foregroundColor(.white.opacity(0.75))
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Mavi geçişli büyük düğme.
+struct CamAnaDugme: View {
+    let baslik: String
+    let bekliyor: Bool
+    let etkin: Bool
+    let eylem: () -> Void
+
+    var body: some View {
+        Button(action: eylem) {
+            HStack {
+                if bekliyor {
+                    ProgressView().tint(.white)
+                }
+                Text(baslik)
+                    .fontWeight(.bold)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(15)
+            .foregroundColor(.white)
+            .background(
+                LinearGradient(gradient: Gradient(colors: [Color(UIColor(onaltilik: 0x1E88E5)),
+                                                           Color(UIColor(onaltilik: 0x0B5CAD))]),
+                               startPoint: .leading, endPoint: .trailing)
+                    .opacity(etkin ? 1 : 0.5)
+            )
+            .cornerRadius(14)
+        }
+        .disabled(!etkin || bekliyor)
+    }
+}
+
+/// Başarı / hata kutusu (cam kart içinde).
+struct CamMesaj: View {
+    let metin: String
+    let hata: Bool
+
+    var body: some View {
+        Text(metin)
+            .font(.callout)
+            .foregroundColor(.white)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(12)
+            .frame(maxWidth: .infinity)
+            .background(Color(UIColor(onaltilik: hata ? 0xB42335 : 0x17804A)).opacity(0.85))
+            .cornerRadius(12)
+    }
+}
+
+struct CamKart: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .padding(20)
+            .background(.ultraThinMaterial)
+            .environment(\.colorScheme, .dark)
+            .cornerRadius(22)
+            .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.18), lineWidth: 1))
+    }
+}
+
+extension View {
+    func camKart() -> some View {
+        modifier(CamKart())
     }
 }

@@ -112,22 +112,33 @@ extension View {
 struct Kahraman<Icerik: View>: View {
     let baslik: String
     let aciklama: String?
+    /// true: başlık tek satıra sığdırılır (uzun isimlerde yazı küçülür).
+    let tekSatir: Bool
     let icerik: Icerik
     @Environment(\.colorScheme) private var sema
 
-    init(baslik: String, aciklama: String? = nil, @ViewBuilder icerik: () -> Icerik) {
+    init(baslik: String, aciklama: String? = nil, tekSatir: Bool = false, @ViewBuilder icerik: () -> Icerik) {
         self.baslik = baslik
         self.aciklama = aciklama
+        self.tekSatir = tekSatir
         self.icerik = icerik()
     }
 
     var body: some View {
         let renkler = (sema == .dark ? Renk.kahramanKoyu : Renk.kahramanAcik).map { Color($0) }
         VStack(alignment: .leading, spacing: 10) {
-            Text(baslik)
-                .font(.system(size: 30, weight: .bold, design: .serif))
-                .foregroundColor(.white)
-                .fixedSize(horizontal: false, vertical: true)
+            if tekSatir {
+                Text(baslik)
+                    .font(.system(size: 26, weight: .bold, design: .serif))
+                    .foregroundColor(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            } else {
+                Text(baslik)
+                    .font(.system(size: 30, weight: .bold, design: .serif))
+                    .foregroundColor(.white)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
             if let a = aciklama {
                 Text(a)
                     .font(.callout)
@@ -158,8 +169,8 @@ struct Kahraman<Icerik: View>: View {
 }
 
 extension Kahraman where Icerik == EmptyView {
-    init(baslik: String, aciklama: String? = nil) {
-        self.init(baslik: baslik, aciklama: aciklama) { EmptyView() }
+    init(baslik: String, aciklama: String? = nil, tekSatir: Bool = false) {
+        self.init(baslik: baslik, aciklama: aciklama, tekSatir: tekSatir) { EmptyView() }
     }
 }
 
@@ -385,71 +396,103 @@ struct ResmiKaynakListesi: View {
     }
 }
 
-// MARK: - Aşağı çekip bırakınca yenileme (iOS 15'te ScrollView için)
+// MARK: - Aşağı çekip bırakınca yenileme (iOS'un kendi yenileme simgesiyle)
 
-private struct KaydirmaOfseti: PreferenceKey {
-    static var defaultValue: CGFloat = 0
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value = nextValue()
-    }
-}
-
-/// İçeriği aşağı çekip bırakınca sunucudan içerik kontrolü yapar ("son kontrol" saati güncellenir).
+/// İçeriği aşağı çekip bırakınca iOS'un dönen yenileme simgesi çıkar ve sunucudan içerik
+/// kontrolü yapılır; bitince "son kontrol" saati güncellenir.
+/// iOS 15'te ScrollView için .refreshable olmadığından alttaki UIScrollView'a
+/// UIRefreshControl bağlanır.
 struct YenilenebilirKaydirma<Icerik: View>: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
     @ViewBuilder let icerik: () -> Icerik
 
-    @State private var cekme: CGFloat = 0
-    @State private var hazir = true
-    private let esik: CGFloat = 80
-    private let alan = "yenilenebilirKaydirma"
-
     var body: some View {
         ScrollView {
-            ZStack(alignment: .top) {
-                GeometryReader { g in
-                    Color.clear.preference(key: KaydirmaOfseti.self, value: g.frame(in: .named(alan)).minY)
-                }
-                .frame(height: 0)
-
-                icerik()
-
-                gosterge
-                    .offset(y: depo.guncelleniyor ? 6 : -(max(0, cekme) / 2) - 14)
-                    .opacity(depo.guncelleniyor ? 1 : Double(min(1, max(0, (cekme - 10) / esik))))
-            }
+            icerik()
+                .background(
+                    YenilemeBaglayici {
+                        await Eylemler.guncelle(oturum: oturum, depo: depo)
+                    }
+                    .frame(width: 0, height: 0)
+                )
         }
-        .coordinateSpace(name: alan)
-        .onPreferenceChange(KaydirmaOfseti.self) { y in
-            cekme = y
-            if y > esik && hazir && !depo.guncelleniyor {
-                hazir = false
-                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
-            }
-            if y < 4 {
-                hazir = true
+    }
+}
+
+private struct YenilemeBaglayici: UIViewRepresentable {
+    let eylem: () async -> Void
+
+    func makeCoordinator() -> Koordinator {
+        return Koordinator(eylem: eylem)
+    }
+
+    func makeUIView(context: Context) -> BaglayiciGorunum {
+        let v = BaglayiciGorunum()
+        v.koordinator = context.coordinator
+        v.isUserInteractionEnabled = false
+        return v
+    }
+
+    func updateUIView(_ uiView: BaglayiciGorunum, context: Context) {
+        context.coordinator.eylem = eylem
+        uiView.koordinator = context.coordinator
+        uiView.bagla()
+    }
+
+    @MainActor
+    final class Koordinator: NSObject {
+        var eylem: () async -> Void
+        private var calisiyor = false
+
+        init(eylem: @escaping () async -> Void) {
+            self.eylem = eylem
+        }
+
+        @objc func yenile(_ kontrol: UIRefreshControl) {
+            if calisiyor { return }
+            calisiyor = true
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            let gorev = eylem
+            Task { @MainActor in
+                await gorev()
+                kontrol.endRefreshing()
+                self.calisiyor = false
             }
         }
     }
 
-    private var gosterge: some View {
-        HStack(spacing: 8) {
-            if depo.guncelleniyor {
-                ProgressView().tint(.white)
-                Text("Güncelleniyor…")
-            } else {
-                Image(systemName: cekme > esik ? "arrow.clockwise" : "arrow.down")
-                Text(cekme > esik ? "Bırakın, yenileniyor" : "Yenilemek için çekin")
+    final class BaglayiciGorunum: UIView {
+        weak var koordinator: Koordinator?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            bagla()
+        }
+
+        /// Üstteki UIScrollView'u bulup yenileme kontrolünü (bir kez) ekler.
+        func bagla() {
+            guard window != nil else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let self = self, let k = self.koordinator else { return }
+                var ust = self.superview
+                while let v = ust, !(v is UIScrollView) {
+                    ust = v.superview
+                }
+                guard let kaydirma = ust as? UIScrollView else { return }
+                if let mevcut = kaydirma.refreshControl {
+                    mevcut.removeTarget(nil, action: nil, for: .valueChanged)
+                    mevcut.addTarget(k, action: #selector(Koordinator.yenile(_:)), for: .valueChanged)
+                    return
+                }
+                let kontrol = UIRefreshControl()
+                kontrol.tintColor = .white
+                // Lacivert üst alanın önünde görünsün.
+                kontrol.layer.zPosition = 10
+                kontrol.addTarget(k, action: #selector(Koordinator.yenile(_:)), for: .valueChanged)
+                kaydirma.alwaysBounceVertical = true
+                kaydirma.refreshControl = kontrol
             }
         }
-        .font(.caption.weight(.semibold))
-        .foregroundColor(.white)
-        .padding(.horizontal, 12)
-        .padding(.vertical, 6)
-        .background(Color.black.opacity(0.28))
-        .cornerRadius(999)
-        .allowsHitTesting(false)
     }
 }

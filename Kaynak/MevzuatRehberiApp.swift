@@ -4,6 +4,7 @@ import SwiftUI
 struct MevzuatRehberiApp: App {
     @StateObject private var oturum = Oturum()
     @StateObject private var depo = VeriDeposu()
+    @StateObject private var foto = ProfilFotografi.paylasilan
 
     init() {
         // Tür fotoğrafları internetsizken de görünsün diye önbellek büyütülür.
@@ -19,6 +20,7 @@ struct MevzuatRehberiApp: App {
             KokGorunum()
                 .environmentObject(oturum)
                 .environmentObject(depo)
+                .environmentObject(foto)
         }
     }
 }
@@ -26,6 +28,7 @@ struct MevzuatRehberiApp: App {
 struct KokGorunum: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
+    @EnvironmentObject var foto: ProfilFotografi
     @Environment(\.scenePhase) private var faz
     /// Hesabım > Görünüm: otomatik / acik (gündüz) / koyu (gece). Bu cihazda hatırlanır.
     @AppStorage("gorunum") private var gorunum = "otomatik"
@@ -40,6 +43,8 @@ struct KokGorunum: View {
             }
         }
         .preferredColorScheme(gorunum == "acik" ? .light : (gorunum == "koyu" ? .dark : nil))
+        .onAppear { foto.kullaniciAyarla(oturum.kullanici?.id) }
+        .onChange(of: oturum.kullanici?.id) { yeni in foto.kullaniciAyarla(yeni) }
         .task {
             await depo.diskOku()
             await baslangicKontrolu()
@@ -79,8 +84,9 @@ enum Eylemler {
         }
     }
 
+    /// Çıkış: giriş bilgisi ve indirilen içerik silinir. Profil fotoğrafı telefonda kalır
+    /// (aynı hesapla girince geri gelir).
     static func cikis(oturum: Oturum, depo: VeriDeposu) {
-        ProfilFotografi.sil()
         oturum.cikisYap()
         depo.temizle()
     }

@@ -5,6 +5,7 @@ import UIKit
 struct HesapEkrani: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
+    @EnvironmentObject var foto: ProfilFotografi
     @AppStorage("gorunum") private var gorunum = "otomatik"
 
     @State private var adSoyad = ""
@@ -18,17 +19,11 @@ struct HesapEkrani: View {
     @State private var silmeSorusu = false
     @State private var iptalSorusu = false
     @State private var cikisSorusu = false
-    @State private var webSayfasi: WebSayfasi?
+    @State private var icSayfa: IcWebSayfasi?
     @State private var panelHatasi: String?
-    @State private var foto: UIImage? = ProfilFotografi.oku()
+    @State private var panelAciliyor: String?
     @State private var fotoSecimi = false
     @State private var fotoSecici = false
-
-    private var surum: String {
-        let s = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
-        let b = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "?"
-        return "\(s) (\(b))"
-    }
 
     var body: some View {
         let k = oturum.kullanici
@@ -54,11 +49,13 @@ struct HesapEkrani: View {
 
                     if yonetici {
                         HStack(spacing: 10) {
-                            YoneticiDugmesi(sembol: "bubble.left.and.bubble.right", baslik: "Destek paneli") {
-                                PanelGecisi.ac("destek", oturum: oturum) { s, h in webSayfasi = s; panelHatasi = h }
+                            YoneticiDugmesi(sembol: panelAciliyor == "destek" ? "hourglass" : "bubble.left.and.bubble.right",
+                                            baslik: "Destek paneli") {
+                                paneliAc("destek", baslik: "Destek paneli")
                             }
-                            YoneticiDugmesi(sembol: "gearshape", baslik: "Yönetim paneli") {
-                                PanelGecisi.ac("admin", oturum: oturum) { s, h in webSayfasi = s; panelHatasi = h }
+                            YoneticiDugmesi(sembol: panelAciliyor == "admin" ? "hourglass" : "gearshape",
+                                            baslik: "Yönetim paneli") {
+                                paneliAc("admin", baslik: "Yönetim paneli")
                             }
                         }
                         if let h = panelHatasi {
@@ -85,21 +82,19 @@ struct HesapEkrani: View {
             if adSoyad.isEmpty { adSoyad = k?.ad ?? "" }
             Task { _ = await oturum.kontrolEt() }
         }
-        .sheet(item: $webSayfasi) { s in
-            SafariGorunumu(url: s.url).ignoresSafeArea()
+        .fullScreenCover(item: $icSayfa) { s in
+            IcWebEkrani(sayfa: s)
         }
         .sheet(isPresented: $fotoSecici) {
             FotoSecici { resim in
-                ProfilFotografi.kaydet(resim)
-                foto = ProfilFotografi.oku()
+                foto.kaydet(resim)
             }
         }
         .confirmationDialog("Profil fotoğrafı", isPresented: $fotoSecimi, titleVisibility: .visible) {
             Button("Fotoğraf seç") { fotoSecici = true }
-            if foto != nil {
+            if foto.resim != nil {
                 Button("Fotoğrafı kaldır", role: .destructive) {
-                    ProfilFotografi.sil()
-                    foto = nil
+                    foto.sil()
                 }
             }
             Button("Vazgeç", role: .cancel) {}
@@ -122,7 +117,7 @@ struct HesapEkrani: View {
             }
             Button("Vazgeç", role: .cancel) {}
         } message: {
-            Text("Telefona indirilen içerik de silinir.")
+            Text("Telefona indirilen içerik silinir; profil fotoğrafınız bu telefonda kalır.")
         }
     }
 
@@ -157,7 +152,7 @@ struct HesapEkrani: View {
                 fotoSecimi = true
             } label: {
                 ZStack(alignment: .bottomTrailing) {
-                    ProfilResmi(resim: foto, harf: ilk, boyut: 64)
+                    ProfilResmi(resim: foto.resim, harf: ilk, boyut: 64)
                     Image(systemName: "camera.fill")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundColor(.white)
@@ -318,13 +313,25 @@ struct HesapEkrani: View {
             Text(Notlar.resmiDegil)
                 .font(.caption)
                 .foregroundColor(Renk.soluk)
-            Text("Sürüm \(surum)")
-                .font(.caption2)
-                .foregroundColor(Renk.soluk)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+                .padding(.top, 4)
         }
     }
 
     // MARK: İşlemler
+
+    private func paneliAc(_ hedef: String, baslik: String) {
+        guard panelAciliyor == nil else { return }
+        panelHatasi = nil
+        panelAciliyor = hedef
+        PanelGecisi.ac(hedef, baslik: baslik, oturum: oturum) { s, h in
+            panelAciliyor = nil
+            icSayfa = s
+            panelHatasi = h
+        }
+    }
 
     private func islem(_ ad: String, _ alanlar: [String: String] = [:]) {
         guard let t = oturum.token, !bekliyor else { return }

@@ -13,6 +13,8 @@
     <key>CFBundleVersion</key><string>$(CURRENT_PROJECT_VERSION)</string>
     <key>ITSAppUsesNonExemptEncryption</key><false/>
     <key>LSRequiresIPhoneOS</key><true/>
+    <key>NSCameraUsageDescription</key><string>Yönetim panelinde fotoğraf yüklerken kamerayla çekim yapabilmek için kullanılır.</string>
+    <key>NSPhotoLibraryUsageDescription</key><string>Profil fotoğrafı ve yönetim panelinde fotoğraf seçebilmek için kullanılır.</string>
     <key>UIApplicationSceneManifest</key>
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key><false/>

@@ -62,6 +62,17 @@ struct HesapCevabi {
     let token: String?
 }
 
+/// register.php'deki Kullanıcı Sözleşmesi.
+struct Sozlesme {
+    struct Bolum: Identifiable {
+        let id = UUID()
+        let baslik: String
+        let metin: String
+    }
+    let bolumler: [Bolum]
+    let tarih: String
+}
+
 struct IcerikCevabi {
     let degisti: Bool
     let h: String
@@ -165,6 +176,40 @@ enum APIIstemci {
         istek.httpBody = try? JSONEncoder().encode(govde)
         let j = try await gonder(istek)
         return HesapCevabi(mesaj: j["mesaj"]?.metin ?? "İşlem tamamlandı.", token: j["token"]?.metin)
+    }
+
+    private static func jsonPost(_ yol: String, _ govde: [String: String]) async throws -> [String: JSONDeger] {
+        var istek = URLRequest(url: adres(yol))
+        istek.httpMethod = "POST"
+        istek.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        istek.setValue("application/json", forHTTPHeaderField: "Accept")
+        istek.httpBody = try? JSONEncoder().encode(govde)
+        return try await gonder(istek)
+    }
+
+    /// kayit.php (sitedeki register.php ile aynı kurallar). Başarı mesajını döndürür.
+    static func kayit(_ alanlar: [String: String]) async throws -> String {
+        let j = try await jsonPost("kayit.php", alanlar)
+        return j["mesaj"]?.metin ?? "Kayıt başarılı. Hesabınız yönetici onayı bekliyor."
+    }
+
+    /// kayit.php GET: Kullanıcı Sözleşmesi metni.
+    static func sozlesme() async throws -> Sozlesme {
+        var istek = URLRequest(url: adres("kayit.php"))
+        istek.setValue("application/json", forHTTPHeaderField: "Accept")
+        let j = try await gonder(istek)
+        let o = j["sozlesme"]?.nesne
+        let bolumler: [Sozlesme.Bolum] = (o?["bolumler"]?.dizi ?? []).compactMap { d in
+            guard let b = d.nesne else { return nil }
+            return Sozlesme.Bolum(baslik: b.metin("baslik"), metin: b.metin("metin"))
+        }
+        return Sozlesme(bolumler: bolumler, tarih: o?.metin("tarih") ?? "")
+    }
+
+    /// sifre-unuttum.php (sitedeki forgot_password.php ile aynı). Mesajı döndürür.
+    static func sifreUnuttum(eposta: String) async throws -> String {
+        let j = try await jsonPost("sifre-unuttum.php", ["email": eposta])
+        return j["mesaj"]?.metin ?? "Şifre yenileme bağlantısı gönderildi."
     }
 
     static func icerik(bolum: String, h: String?, token: String) async throws -> IcerikCevabi {
