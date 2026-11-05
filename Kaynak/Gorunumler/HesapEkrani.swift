@@ -53,10 +53,10 @@ struct HesapEkrani: View {
                                             baslik: "Destek paneli") {
                                 paneliAc("destek", baslik: "Destek paneli")
                             }
-                            YoneticiDugmesi(sembol: panelAciliyor == "admin" ? "hourglass" : "gearshape",
-                                            baslik: "Yönetim paneli") {
-                                paneliAc("admin", baslik: "Yönetim paneli")
+                            NavigationLink(destination: YonetimEkrani()) {
+                                YoneticiEtiketi(sembol: "gearshape", baslik: "Yönetim paneli")
                             }
+                            .buttonStyle(.plain)
                         }
                         if let h = panelHatasi {
                             UyariKutusu(tur: .dikkat, baslik: "Panel açılamadı.", metin: h)

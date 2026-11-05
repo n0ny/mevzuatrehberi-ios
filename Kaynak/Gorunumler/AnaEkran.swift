@@ -254,21 +254,31 @@ struct YoneticiDugmesi: View {
 
     var body: some View {
         Button(action: eylem) {
-            HStack(spacing: 8) {
-                Image(systemName: sembol)
-                Text(baslik)
-                    .font(.footnote.weight(.semibold))
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 11)
-            // Gündüz lacivert, gecede açık mavi yazı (gece modunda okunur).
-            .foregroundColor(Renk.mavi)
-            .background(Renk.tint)
-            .cornerRadius(12)
-            .overlay(RoundedRectangle(cornerRadius: 12).stroke(Renk.mavi.opacity(0.25), lineWidth: 1))
+            YoneticiEtiketi(sembol: sembol, baslik: baslik)
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// Yönetici düğmelerinin görünümü (düğme ve sayfa bağlantısı için ortak).
+struct YoneticiEtiketi: View {
+    let sembol: String
+    let baslik: String
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: sembol)
+            Text(baslik)
+                .font(.footnote.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 11)
+        // Gündüz lacivert, gecede açık mavi yazı (gece modunda okunur).
+        .foregroundColor(Renk.mavi)
+        .background(Renk.tint)
+        .cornerRadius(12)
+        .overlay(RoundedRectangle(cornerRadius: 12).stroke(Renk.mavi.opacity(0.25), lineWidth: 1))
     }
 }

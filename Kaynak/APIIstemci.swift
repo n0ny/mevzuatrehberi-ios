@@ -263,6 +263,39 @@ enum APIIstemci {
                                           govde: ["soru_id": String(soruId), "secim": secim]))
     }
 
+    // MARK: Yönetim (yalnızca yönetici) — api/yonetim.php
+
+    private static func snakeCoz<T: Decodable>(_ j: [String: JSONDeger], _ tur: T.Type) throws -> T {
+        do {
+            let veri = try JSONEncoder().encode(j)
+            let cozucu = JSONDecoder()
+            cozucu.keyDecodingStrategy = .convertFromSnakeCase
+            return try cozucu.decode(tur, from: veri)
+        } catch {
+            throw APIHatasi.cozumleme
+        }
+    }
+
+    static func yonetimListesi(token: String) async throws -> YonetimVerisi {
+        let j = try await gonder(tokenliIstek("yonetim.php", token: token))
+        return try snakeCoz(j, YonetimVerisi.self)
+    }
+
+    /// Kullanıcı işlemleri (admin/index.php ile aynı). Başarı mesajını döndürür.
+    static func yonetimIslem(_ islem: String, alanlar: [String: String], token: String) async throws -> String {
+        var govde = alanlar
+        govde["islem"] = islem
+        let j = try await gonder(tokenliIstek("yonetim.php", token: token, govde: govde))
+        return j["mesaj"]?.metin ?? "İşlem tamamlandı."
+    }
+
+    /// Bildirim gönder (admin/send_notification.php ile aynı).
+    static func yonetimBildirim(baslik: String, metin: String, token: String) async throws -> BildirimSonucu {
+        let j = try await gonder(tokenliIstek("yonetim.php", token: token,
+                                              govde: ["islem": "bildirim", "title": baslik, "body": metin]))
+        return try snakeCoz(j, BildirimSonucu.self)
+    }
+
     static func icerik(bolum: String, h: String?, token: String) async throws -> IcerikCevabi {
         var sorgu = [URLQueryItem(name: "bolum", value: bolum)]
         if let h = h, !h.isEmpty {

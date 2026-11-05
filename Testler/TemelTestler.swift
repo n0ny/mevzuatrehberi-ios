@@ -243,4 +243,27 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(v.siralama.hafta?.liste.first?.ad, "A. Yılmaz")
         XCTAssertEqual(v.gecmis.first?.katildi, true)
     }
+
+    /// Yönetim listesi: admin/index.php sıralaması ve arama.
+    func testYonetimSiralamaVeArama() throws {
+        let j = try satir(#"""
+        {"toplam": 4, "bekleyen": 1, "kullanicilar": [
+          {"id": 1, "kullanici_adi": "zeki", "ad": "Zeki Kaya", "eposta": "z@a.com", "rol": "admin", "aktif": true, "durum": "approved", "yeni": false, "son_giris": "05.11.2026 20:08", "son_giris_ts": 200, "giris_sayisi": 11, "ben": true},
+          {"id": 2, "kullanici_adi": "ali", "ad": "Ali Şahin", "eposta": "a@a.com", "rol": "personel", "aktif": true, "durum": "approved", "yeni": true, "son_giris": null, "son_giris_ts": 0, "giris_sayisi": 0, "ben": false},
+          {"id": 3, "kullanici_adi": "bekleyen", "ad": "", "eposta": "b@a.com", "rol": "personel", "aktif": false, "durum": "pending", "yeni": false, "son_giris": null, "son_giris_ts": 0, "giris_sayisi": 0, "ben": false},
+          {"id": 4, "kullanici_adi": "red", "ad": "", "eposta": "", "rol": "personel", "aktif": false, "durum": "rejected", "yeni": false, "son_giris": "01.11.2026 10:00", "son_giris_ts": 100, "giris_sayisi": 2, "ben": false}
+        ]}
+        """#)
+        let veri = try JSONEncoder().encode(j)
+        let c = JSONDecoder()
+        c.keyDecodingStrategy = .convertFromSnakeCase
+        let v = try c.decode(YonetimVerisi.self, from: veri)
+        XCTAssertEqual(v.kullanicilar.first?.girisSayisi, 11)
+        XCTAssertEqual(YonetimKurallari.sirala(v.kullanicilar, "yeni").map { $0.id }, [3, 2, 1, 4])
+        XCTAssertEqual(YonetimKurallari.sirala(v.kullanicilar, "giris").map { $0.id }, [3, 1, 2, 4])
+        XCTAssertEqual(YonetimKurallari.sirala(v.kullanicilar, "ad").map { $0.id }, [3, 2, 1, 4])
+        XCTAssertEqual(YonetimKurallari.ara(v.kullanicilar, "şahin").map { $0.id }, [2])
+        XCTAssertEqual(YonetimKurallari.ara(v.kullanicilar, "B@A").map { $0.id }, [3])
+        XCTAssertEqual(v.kullanicilar[1].basHarf, "A")
+    }
 }
