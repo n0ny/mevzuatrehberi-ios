@@ -198,7 +198,10 @@ struct YonetimEkrani: View {
                     .font(.headline)
                     .foregroundColor(Renk.murekkep)
             }
-            icerikSatiri("questionmark.circle", "Haftanın soruları", "Soru setleri, kim ne cevapladı, sıralama", "admin-bilgi")
+            NavigationLink(destination: SoruSetleriEkrani()) {
+                icerikEtiketi("questionmark.circle", "Haftanın soruları", "Soru setleri, kim ne cevapladı, sıralama")
+            }
+            .buttonStyle(.plain)
             icerikSatiri("text.bubble", "Yenilikler", "Eklenen mevzuatı duyur, bildirim gönder", "admin-yenilikler")
             icerikSatiri("fish", "Tür kartları", "Fotoğraf, asgari boy ve yasak dönemi gir", "admin-turler")
             if let h = panelHatasi {
@@ -217,6 +220,12 @@ struct YonetimEkrani: View {
                 panelHatasi = h
             }
         } label: {
+            icerikEtiketi(sembol, baslik, aciklama)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func icerikEtiketi(_ sembol: String, _ baslik: String, _ aciklama: String) -> some View {
             HStack(spacing: 12) {
                 Sembol(ad: sembol, yedek: "doc.text")
                     .font(.system(size: 16, weight: .semibold))
@@ -241,8 +250,6 @@ struct YonetimEkrani: View {
             .padding(10)
             .background(Renk.ikincil)
             .cornerRadius(12)
-        }
-        .buttonStyle(.plain)
     }
 
     // MARK: Onay bekleyenler

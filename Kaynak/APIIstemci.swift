@@ -296,6 +296,33 @@ enum APIIstemci {
         return try snakeCoz(j, BildirimSonucu.self)
     }
 
+    // MARK: Haftanın soruları yönetimi (yalnızca yönetici) — api/yonetim-bilgi.php
+
+    static func soruSetleri(token: String) async throws -> SoruSetListesi {
+        let j = try await gonder(tokenliIstek("yonetim-bilgi.php", token: token))
+        return try snakeCoz(j, SoruSetListesi.self)
+    }
+
+    static func soruSeti(id: Int, token: String) async throws -> SoruSetiAyrintisi {
+        let j = try await gonder(tokenliIstek("yonetim-bilgi.php",
+                                              sorgu: [URLQueryItem(name: "set", value: String(id))],
+                                              token: token))
+        return try snakeCoz(j, SoruSetiAyrintisi.self)
+    }
+
+    /// admin/bilgi.php işlemleri. Yeni set oluşturulduysa kimliği de döner.
+    static func soruSetiIslem(_ islem: String, alanlar: [String: String], token: String) async throws -> (mesaj: String, setId: Int?) {
+        var govde = alanlar
+        govde["islem"] = islem
+        let j = try await gonder(tokenliIstek("yonetim-bilgi.php", token: token, govde: govde))
+        var setId: Int?
+        if let konum = j["konum"]?.metin,
+           let r = konum.range(of: #"set=(\d+)"#, options: .regularExpression) {
+            setId = Int(konum[r].dropFirst(4))
+        }
+        return (j["mesaj"]?.metin ?? "İşlem tamamlandı.", setId)
+    }
+
     static func icerik(bolum: String, h: String?, token: String) async throws -> IcerikCevabi {
         var sorgu = [URLQueryItem(name: "bolum", value: bolum)]
         if let h = h, !h.isEmpty {

@@ -283,4 +283,30 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(y.uygulamaMaddeleri.map { $0.baslik }, ["Gece modu"])
         XCTAssertEqual(y.maddeler[1].durumTuru, "done")
     }
+
+    /// Yönetim > Haftanın soruları: set ayrıntısı çözümü (boş şıklar gizlenir, boş cevap hücresi olur).
+    func testSoruSetiAyrintisiCozumleme() throws {
+        let j = try satir(#"""
+        {"ok": true, "personel_sayisi": 5,
+         "set": {"id": 1, "baslik": "Hafta 45", "baslangic": "2026-11-03", "bitis": "2026-11-09", "tarih": "3 Kasım 2026 – 9 Kasım 2026",
+                 "aktif": true, "durum": "Yayında", "durum_turu": "yayinda", "duyuruldu": null},
+         "sorular": [{"id": 1, "no": 1, "sira": 1, "soru": "S?", "sik_a": "2", "sik_b": "4", "sik_c": "", "sik_d": "",
+                      "dogru": "a", "aciklama": "", "kaynak": "6/2", "cevap_sayisi": 2,
+                      "dagilim": {"a": 1, "b": 1, "c": 0, "d": 0}, "dagilim_toplam": 2, "dogru_orani": 50}],
+         "katilimci": 1,
+         "kisiler": [{"ad": "Ali", "kullanici_adi": "ali", "admin": false, "dogru": 0, "son": "5 Kasım 2026 19:30",
+                      "cevaplar": [{"secilen": "B", "dogru_mu": false}, null]}],
+         "katilmayanlar": [{"ad": "Veli", "kullanici_adi": "veli", "son_giris": null}]}
+        """#)
+        let c = JSONDecoder()
+        c.keyDecodingStrategy = .convertFromSnakeCase
+        let v = try c.decode(SoruSetiAyrintisi.self, from: JSONEncoder().encode(j))
+        XCTAssertTrue(v.yayinda)
+        XCTAssertEqual(v.sorular[0].siklar.map { $0.harf }, ["A", "B"])
+        XCTAssertEqual(v.sorular[0].dogruOrani, 50)
+        XCTAssertEqual(v.kisiler[0].cevaplar.count, 2)
+        XCTAssertNil(v.kisiler[0].cevaplar[1])
+        XCTAssertEqual(v.katilmayanlar[0].kullaniciAdi, "veli")
+        XCTAssertEqual(GunBicimi.metin(GunBicimi.tarih("2026-11-03")), "2026-11-03")
+    }
 }
