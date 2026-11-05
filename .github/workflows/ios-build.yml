@@ -39,7 +39,7 @@ jobs:
           zip -qry ../MevzuatRehberi-imzasiz.ipa Payload
 
       - name: IPA dosyasını kaydet
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: MevzuatRehberi-imzasiz-IPA
           path: build/MevzuatRehberi-imzasiz.ipa
