@@ -309,4 +309,27 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(v.katilmayanlar[0].kullaniciAdi, "veli")
         XCTAssertEqual(GunBicimi.metin(GunBicimi.tarih("2026-11-03")), "2026-11-03")
     }
+
+    /// Yönetim > Tür kartları: liste çözümü ve arama.
+    func testTurYonetimiCozumlemeVeArama() throws {
+        let j = try satir(#"""
+        {"ok": true, "fotosuz": 1, "gruplar": ["Balık", "Kabuklu", "Yumuşakça", "İçsu", "Diğer"],
+         "kaynak_onerileri": [{"ad": "6/1 Ticari Tebliğ (2024/20)", "url": "https://resmigazete.gov.tr/eskiler/2024/08/20240811-3.htm"}],
+         "turler": [
+           {"id": 55, "ad": "Ahtapot", "diger_adlar": "", "bilimsel_ad": "Octopus vulgaris", "grup": "Yumuşakça", "foto_url": null,
+            "foto_kredi": "", "boy_ticari": "750 g", "boy_amator": "750 g", "yasak_donemi": "", "notlar": "", "kaynak": "", "kaynak_url": "", "aktif": true},
+           {"id": 7, "ad": "Hamsi", "diger_adlar": "Hamsi balığı", "bilimsel_ad": "Engraulis encrasicolus", "grup": "Balık", "foto_url": "https://x/a.jpg",
+            "foto_kredi": "A · CC BY", "boy_ticari": "9 cm", "boy_amator": "9 cm", "yasak_donemi": "", "notlar": "", "kaynak": "", "kaynak_url": "", "aktif": false}
+         ]}
+        """#)
+        let c = JSONDecoder()
+        c.keyDecodingStrategy = .convertFromSnakeCase
+        let v = try c.decode(TurYonetimVerisi.self, from: JSONEncoder().encode(j))
+        XCTAssertEqual(v.turler.count, 2)
+        XCTAssertNil(v.turler[0].fotoUrl)
+        XCTAssertEqual(v.turler[1].aktif, false)
+        XCTAssertEqual(v.kaynakOnerileri.first?.ad, "6/1 Ticari Tebliğ (2024/20)")
+        XCTAssertEqual(TurYonetimKurallari.ara(v.turler, "engraulis").map { $0.id }, [7])
+        XCTAssertEqual(TurYonetimKurallari.ara(v.turler, "yumusakca").map { $0.id }, [55])
+    }
 }

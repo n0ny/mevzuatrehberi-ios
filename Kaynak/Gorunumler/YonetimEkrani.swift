@@ -203,7 +203,10 @@ struct YonetimEkrani: View {
             }
             .buttonStyle(.plain)
             icerikSatiri("text.bubble", "Yenilikler", "Eklenen mevzuatı duyur, bildirim gönder", "admin-yenilikler")
-            icerikSatiri("fish", "Tür kartları", "Fotoğraf, asgari boy ve yasak dönemi gir", "admin-turler")
+            NavigationLink(destination: TurYonetimiEkrani()) {
+                icerikEtiketi("fish", "Tür kartları", "Fotoğraf, asgari boy ve yasak dönemi gir")
+            }
+            .buttonStyle(.plain)
             if let h = panelHatasi {
                 UyariKutusu(tur: .dikkat, baslik: "Sayfa açılamadı.", metin: h)
             }

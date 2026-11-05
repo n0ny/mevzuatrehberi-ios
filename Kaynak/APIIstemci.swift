@@ -118,6 +118,9 @@ enum APIIstemci {
             throw APIHatasi.sunucu(mesaj ?? "Sunucu hatası (\(kod)).")
         }
         guard let j = json, j["ok"]?.mantik == true else {
+            if let m = mesaj, !m.isEmpty {
+                throw APIHatasi.sunucu(m)
+            }
             throw APIHatasi.cozumleme
         }
         return j
@@ -321,6 +324,60 @@ enum APIIstemci {
             setId = Int(konum[r].dropFirst(4))
         }
         return (j["mesaj"]?.metin ?? "İşlem tamamlandı.", setId)
+    }
+
+    // MARK: Tür kartları yönetimi (yalnızca yönetici) — api/yonetim-turler.php
+
+    static func turYonetimi(token: String) async throws -> TurYonetimVerisi {
+        let j = try await gonder(tokenliIstek("yonetim-turler.php", token: token))
+        return try snakeCoz(j, TurYonetimVerisi.self)
+    }
+
+    /// gorunurluk / sil
+    static func turIslem(_ islem: String, id: Int, token: String) async throws -> String {
+        let j = try await gonder(tokenliIstek("yonetim-turler.php", token: token,
+                                              govde: ["islem": islem, "id": String(id)]))
+        return j["mesaj"]?.metin ?? "İşlem tamamlandı."
+    }
+
+    /// Tür kartını kaydeder; fotoğraf varsa sitedeki form gibi dosya olarak gönderilir.
+    static func turKaydet(alanlar: [String: String], foto: Data?, token: String) async throws -> String {
+        let sinir = "MR-" + UUID().uuidString
+        var govde = Data()
+        func ekle(_ s: String) { govde.append(Data(s.utf8)) }
+        var tum = alanlar
+        tum["islem"] = "kaydet"
+        for (anahtar, deger) in tum {
+            ekle("--\(sinir)\r\n")
+            ekle("Content-Disposition: form-data; name=\"\(anahtar)\"\r\n\r\n")
+            ekle(deger + "\r\n")
+        }
+        if let f = foto {
+            ekle("--\(sinir)\r\n")
+            ekle("Content-Disposition: form-data; name=\"foto\"; filename=\"foto.jpg\"\r\n")
+            ekle("Content-Type: image/jpeg\r\n\r\n")
+            govde.append(f)
+            ekle("\r\n")
+        }
+        ekle("--\(sinir)--\r\n")
+        var istek = tokenliIstek("yonetim-turler.php", token: token)
+        istek.httpMethod = "POST"
+        istek.setValue("multipart/form-data; boundary=\(sinir)", forHTTPHeaderField: "Content-Type")
+        istek.httpBody = govde
+        istek.timeoutInterval = 90
+        let j = try await gonder(istek)
+        return j["mesaj"]?.metin ?? "Tür kartı kaydedildi."
+    }
+
+    /// admin/fotobul.php: tek kart için Wikipedia'dan fotoğraf arar.
+    static func turFotoBul(id: Int, token: String) async throws -> FotoBulSonucu {
+        var istek = tokenliIstek("yonetim-turler.php", token: token, govde: ["islem": "foto_bul", "id": String(id)])
+        istek.timeoutInterval = 100
+        let j = try await gonder(istek)
+        return FotoBulSonucu(durum: j["durum"]?.metin ?? "",
+                             mesaj: j["mesaj"]?.metin ?? "",
+                             kredi: j["kredi"]?.metin ?? "",
+                             aranan: j["aranan"]?.metin ?? "")
     }
 
     static func icerik(bolum: String, h: String?, token: String) async throws -> IcerikCevabi {
