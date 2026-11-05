@@ -38,18 +38,25 @@ enum Renk {
     static let kahramanAcik = [UIColor(onaltilik: 0x08243A), UIColor(onaltilik: 0x0B2E4A), UIColor(onaltilik: 0x11456B)]
     static let kahramanKoyu = [UIColor(onaltilik: 0x050E17), UIColor(onaltilik: 0x08223A), UIColor(onaltilik: 0x0D3556)]
 
-    /// Gezinme çubuğu: sitedeki lacivert üst alanla aynı.
+    /// Gezinme çubuğu: sayfanın en üstündeyken saydam (lacivert üst alanla tek parça görünür),
+    /// sayfa kaydırılınca lacivert zemin gelir.
     static func gezinmeCubugunuAyarla() {
-        let gorunum = UINavigationBarAppearance()
-        gorunum.configureWithOpaqueBackground()
-        gorunum.backgroundColor = UIColor.dinamik(0x08243A, 0x050E17)
-        gorunum.shadowColor = .clear
-        gorunum.titleTextAttributes = [.foregroundColor: UIColor.white]
-        gorunum.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+        let dolu = UINavigationBarAppearance()
+        dolu.configureWithOpaqueBackground()
+        dolu.backgroundColor = UIColor.dinamik(0x08243A, 0x050E17)
+        dolu.shadowColor = .clear
+        dolu.titleTextAttributes = [.foregroundColor: UIColor.white]
+        dolu.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+
+        let saydam = UINavigationBarAppearance()
+        saydam.configureWithTransparentBackground()
+        saydam.titleTextAttributes = [.foregroundColor: UIColor.white]
+        saydam.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+
         let cubuk = UINavigationBar.appearance()
-        cubuk.standardAppearance = gorunum
-        cubuk.scrollEdgeAppearance = gorunum
-        cubuk.compactAppearance = gorunum
+        cubuk.standardAppearance = dolu
+        cubuk.compactAppearance = dolu
+        cubuk.scrollEdgeAppearance = saydam
         cubuk.tintColor = .white
     }
 
@@ -115,6 +122,7 @@ struct Kahraman<Icerik: View>: View {
     }
 
     var body: some View {
+        let renkler = (sema == .dark ? Renk.kahramanKoyu : Renk.kahramanAcik).map { Color($0) }
         VStack(alignment: .leading, spacing: 10) {
             Text(baslik)
                 .font(.system(size: 30, weight: .bold, design: .serif))
@@ -130,12 +138,21 @@ struct Kahraman<Icerik: View>: View {
         }
         .padding(.horizontal, 18)
         .padding(.top, 8)
-        .padding(.bottom, 22)
+        .padding(.bottom, 24)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            LinearGradient(gradient: Gradient(colors: (sema == .dark ? Renk.kahramanKoyu : Renk.kahramanAcik).map { Color($0) }),
-                           startPoint: .topLeading, endPoint: .bottomTrailing)
-                .ignoresSafeArea(edges: .top)
+            // Üst çubuk ve aşağı çekme boşluğu da aynı lacivertle dolsun diye zemin yukarı uzatılır.
+            VStack(spacing: 0) {
+                renkler[0].frame(height: 1200)
+                LinearGradient(gradient: Gradient(colors: renkler), startPoint: .top, endPoint: .bottom)
+                    .overlay(
+                        RadialGradient(gradient: Gradient(colors: [Color(red: 74 / 255, green: 168 / 255, blue: 237 / 255).opacity(0.28),
+                                                                   Color.clear]),
+                                       center: .topTrailing, startRadius: 0, endRadius: 260)
+                    )
+            }
+            .padding(.top, -1200),
+            alignment: .bottom
         )
     }
 }
@@ -365,5 +382,74 @@ struct ResmiKaynakListesi: View {
                 .foregroundColor(Renk.soluk)
                 .fixedSize(horizontal: false, vertical: true)
         }
+    }
+}
+
+// MARK: - Aşağı çekip bırakınca yenileme (iOS 15'te ScrollView için)
+
+private struct KaydirmaOfseti: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
+    }
+}
+
+/// İçeriği aşağı çekip bırakınca sunucudan içerik kontrolü yapar ("son kontrol" saati güncellenir).
+struct YenilenebilirKaydirma<Icerik: View>: View {
+    @EnvironmentObject var oturum: Oturum
+    @EnvironmentObject var depo: VeriDeposu
+    @ViewBuilder let icerik: () -> Icerik
+
+    @State private var cekme: CGFloat = 0
+    @State private var hazir = true
+    private let esik: CGFloat = 80
+    private let alan = "yenilenebilirKaydirma"
+
+    var body: some View {
+        ScrollView {
+            ZStack(alignment: .top) {
+                GeometryReader { g in
+                    Color.clear.preference(key: KaydirmaOfseti.self, value: g.frame(in: .named(alan)).minY)
+                }
+                .frame(height: 0)
+
+                icerik()
+
+                gosterge
+                    .offset(y: depo.guncelleniyor ? 6 : -(max(0, cekme) / 2) - 14)
+                    .opacity(depo.guncelleniyor ? 1 : Double(min(1, max(0, (cekme - 10) / esik))))
+            }
+        }
+        .coordinateSpace(name: alan)
+        .onPreferenceChange(KaydirmaOfseti.self) { y in
+            cekme = y
+            if y > esik && hazir && !depo.guncelleniyor {
+                hazir = false
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
+            }
+            if y < 4 {
+                hazir = true
+            }
+        }
+    }
+
+    private var gosterge: some View {
+        HStack(spacing: 8) {
+            if depo.guncelleniyor {
+                ProgressView().tint(.white)
+                Text("Güncelleniyor…")
+            } else {
+                Image(systemName: cekme > esik ? "arrow.clockwise" : "arrow.down")
+                Text(cekme > esik ? "Bırakın, yenileniyor" : "Yenilemek için çekin")
+            }
+        }
+        .font(.caption.weight(.semibold))
+        .foregroundColor(.white)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(Color.black.opacity(0.28))
+        .cornerRadius(999)
+        .allowsHitTesting(false)
     }
 }

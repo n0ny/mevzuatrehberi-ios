@@ -12,7 +12,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 40
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: XcodeGen kur
         run: brew install xcodegen
@@ -39,7 +39,7 @@ jobs:
           zip -qry ../MevzuatRehberi-imzasiz.ipa Payload
 
       - name: IPA dosyasını kaydet
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: MevzuatRehberi-imzasiz-IPA
           path: build/MevzuatRehberi-imzasiz.ipa

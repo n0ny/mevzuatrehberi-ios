@@ -80,6 +80,7 @@ enum Eylemler {
     }
 
     static func cikis(oturum: Oturum, depo: VeriDeposu) {
+        ProfilFotografi.sil()
         oturum.cikisYap()
         depo.temizle()
     }

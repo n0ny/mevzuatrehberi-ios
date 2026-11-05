@@ -19,7 +19,7 @@ struct TurlerEkrani: View {
             (q.isEmpty || t.aramaSite.contains(q)) && (grup.isEmpty || t.grup == grup)
         }
 
-        return ScrollView {
+        return YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 Kahraman(baslik: "Tür kartları", aciklama: "Asgari av boyu ve yasak dönemlerini tek ekranda gör.") {
                     if !sirali.isEmpty {

@@ -199,7 +199,7 @@ struct YaptirimEkrani: View {
         let q = sorgu.trimmingCharacters(in: .whitespacesAndNewlines)
         let sonuc = YaptirimKurallari.ara(depo.yaptirimlar, sorgu: sorgu, yil: ayar.yil)
         let kayitSayisi = depo.yaptirimlar.filter { $0.yil == ayar.yil }.count
-        ScrollView {
+        YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 Kahraman(baslik: "1380 idari yaptırım rehberi",
                          aciklama: "Tespit ettiğin ihlali ara, uygulanacak ceza ve işlemleri hızlıca gör. Hukuki dayanağı gerektiğinde açarak inceleyebilirsin.") {

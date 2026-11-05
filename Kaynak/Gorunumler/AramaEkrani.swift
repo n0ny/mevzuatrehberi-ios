@@ -11,7 +11,7 @@ struct AramaEkrani: View {
     private let ornekler = ["can yeleği", "ruhsat", "trol", "gırgır", "zıpkın", "boğaz"]
 
     var body: some View {
-        ScrollView {
+        YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 Kahraman(baslik: "Mevzuat arama",
                          aciklama: "Karşılaştığın konuya göre ilgili fiili, maddeyi ve mevzuat açıklamasını hızlıca bul.") {

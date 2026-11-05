@@ -61,9 +61,10 @@ struct AnaEkran: View {
     @AppStorage("gorunum") private var gorunum = "otomatik"
     @State private var yeniSayisi = 0
     @State private var webSayfasi: WebSayfasi?
+    @State private var panelHatasi: String?
 
     var body: some View {
-        ScrollView {
+        YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 Kahraman(baslik: "Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋",
                          aciklama: "Aradığın mevzuata hızlıca ulaş.")
@@ -74,11 +75,14 @@ struct AnaEkran: View {
                     if oturum.yonetici {
                         HStack(spacing: 10) {
                             YoneticiDugmesi(sembol: "bubble.left.and.bubble.right", baslik: "Destek paneli") {
-                                webSayfasi = WebSayfasi(baslik: "Destek paneli", yol: "yanit.php")
+                                PanelGecisi.ac("destek", oturum: oturum) { s, h in webSayfasi = s; panelHatasi = h }
                             }
                             YoneticiDugmesi(sembol: "gearshape", baslik: "Yönetim paneli") {
-                                webSayfasi = WebSayfasi(baslik: "Yönetim paneli", yol: "admin/")
+                                PanelGecisi.ac("admin", oturum: oturum) { s, h in webSayfasi = s; panelHatasi = h }
                             }
+                        }
+                        if let h = panelHatasi {
+                            UyariKutusu(tur: .dikkat, baslik: "Panel açılamadı.", metin: h)
                         }
                     }
 
@@ -97,10 +101,11 @@ struct AnaEkran: View {
                                 rozet: yeniSayisi > 0 ? "\(yeniSayisi) yeni" : nil)
                     }
 
-                    VStack(alignment: .leading, spacing: 6) {
+                    VStack(alignment: .center, spacing: 8) {
                         Text("Bu uygulama resmî kurum uygulaması değildir. İçerikler mevzuata erişim ve referans amacıyla sunulmaktadır; güncel mevzuat metinleri ve yetkili kaynaklar esas alınmalıdır.")
                             .font(.caption)
                             .foregroundColor(Renk.soluk)
+                            .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
                         Button {
                             webSayfasi = WebSayfasi(baslik: "KVKK aydınlatma metni", yol: "kvkk.php")
@@ -110,6 +115,7 @@ struct AnaEkran: View {
                                 .foregroundColor(Renk.mavi)
                         }
                     }
+                    .frame(maxWidth: .infinity)
                     .padding(.top, 10)
                 }
                 .buttonStyle(.plain)
@@ -128,16 +134,6 @@ struct AnaEkran: View {
                     } label: {
                         Image(systemName: sema == .dark ? "sun.max" : "moon")
                             .foregroundColor(.white)
-                    }
-                    if depo.guncelleniyor {
-                        ProgressView().tint(.white)
-                    } else {
-                        Button {
-                            Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
-                        } label: {
-                            Image(systemName: "arrow.clockwise")
-                                .foregroundColor(.white)
-                        }
                     }
                 }
             }
@@ -233,12 +229,36 @@ struct AnaKart: View {
     }
 }
 
-/// Site sayfası (yönetim, destek, KVKK) — uygulama içinde Safari ile açılır.
+/// Site sayfası — uygulama içinde Safari ile açılır.
 struct WebSayfasi: Identifiable {
-    let baslik: String
-    let yol: String
-    var id: String { return yol }
-    var url: URL { return Ayarlar.siteAdresi.appendingPathComponent(yol) }
+    let id = UUID()
+    let url: URL
+
+    init(url: URL) {
+        self.url = url
+    }
+
+    init(baslik: String, yol: String) {
+        self.url = Ayarlar.siteAdresi.appendingPathComponent(yol)
+    }
+}
+
+/// Yönetim ve destek paneline şifresiz geçiş: uygulamadaki giriş tek kullanımlık kodla siteye taşınır.
+@MainActor
+enum PanelGecisi {
+    static func ac(_ hedef: String, oturum: Oturum, sonuc: @escaping (WebSayfasi?, String?) -> Void) {
+        guard let t = oturum.token else { return }
+        Task {
+            do {
+                let u = try await APIIstemci.webOturum(hedef: hedef, token: t)
+                sonuc(WebSayfasi(url: u), nil)
+            } catch let e as APIHatasi {
+                sonuc(nil, e.aciklama)
+            } catch {
+                sonuc(nil, APIHatasi.baglanti.aciklama)
+            }
+        }
+    }
 }
 
 struct SafariGorunumu: UIViewControllerRepresentable {

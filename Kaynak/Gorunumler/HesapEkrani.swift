@@ -19,6 +19,10 @@ struct HesapEkrani: View {
     @State private var iptalSorusu = false
     @State private var cikisSorusu = false
     @State private var webSayfasi: WebSayfasi?
+    @State private var panelHatasi: String?
+    @State private var foto: UIImage? = ProfilFotografi.oku()
+    @State private var fotoSecimi = false
+    @State private var fotoSecici = false
 
     private var surum: String {
         let s = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -32,7 +36,7 @@ struct HesapEkrani: View {
         let yonetici = oturum.yonetici
         let silmeBekliyor = !yonetici && (hesap?.silmeTalebi ?? false)
 
-        return ScrollView {
+        return YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 ust(k: k, hesap: hesap, yonetici: yonetici)
 
@@ -51,11 +55,14 @@ struct HesapEkrani: View {
                     if yonetici {
                         HStack(spacing: 10) {
                             YoneticiDugmesi(sembol: "bubble.left.and.bubble.right", baslik: "Destek paneli") {
-                                webSayfasi = WebSayfasi(baslik: "Destek paneli", yol: "yanit.php")
+                                PanelGecisi.ac("destek", oturum: oturum) { s, h in webSayfasi = s; panelHatasi = h }
                             }
                             YoneticiDugmesi(sembol: "gearshape", baslik: "Yönetim paneli") {
-                                webSayfasi = WebSayfasi(baslik: "Yönetim paneli", yol: "admin/")
+                                PanelGecisi.ac("admin", oturum: oturum) { s, h in webSayfasi = s; panelHatasi = h }
                             }
+                        }
+                        if let h = panelHatasi {
+                            UyariKutusu(tur: .dikkat, baslik: "Panel açılamadı.", metin: h)
                         }
                     }
 
@@ -80,6 +87,24 @@ struct HesapEkrani: View {
         }
         .sheet(item: $webSayfasi) { s in
             SafariGorunumu(url: s.url).ignoresSafeArea()
+        }
+        .sheet(isPresented: $fotoSecici) {
+            FotoSecici { resim in
+                ProfilFotografi.kaydet(resim)
+                foto = ProfilFotografi.oku()
+            }
+        }
+        .confirmationDialog("Profil fotoğrafı", isPresented: $fotoSecimi, titleVisibility: .visible) {
+            Button("Fotoğraf seç") { fotoSecici = true }
+            if foto != nil {
+                Button("Fotoğrafı kaldır", role: .destructive) {
+                    ProfilFotografi.sil()
+                    foto = nil
+                }
+            }
+            Button("Vazgeç", role: .cancel) {}
+        } message: {
+            Text("Fotoğraf yalnızca bu telefonda saklanır.")
         }
         .alert("Hesabınızı silmek istediğinize emin misiniz?", isPresented: $silmeSorusu) {
             Button("Hesabımı sil", role: .destructive) { islem("silme-talebi") }
@@ -128,13 +153,22 @@ struct HesapEkrani: View {
             }
         }
         .overlay(
-            Text(ilk)
-                .font(.system(size: 26, weight: .bold))
-                .foregroundColor(Renk.lacivert)
-                .frame(width: 58, height: 58)
-                .background(Color.white)
-                .clipShape(Circle())
-                .padding(18),
+            Button {
+                fotoSecimi = true
+            } label: {
+                ZStack(alignment: .bottomTrailing) {
+                    ProfilResmi(resim: foto, harf: ilk, boyut: 64)
+                    Image(systemName: "camera.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 24, height: 24)
+                        .background(Renk.mavi)
+                        .clipShape(Circle())
+                        .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                }
+            }
+            .buttonStyle(.plain)
+            .padding(18),
             alignment: .topTrailing)
     }
 

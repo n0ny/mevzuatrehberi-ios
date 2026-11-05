@@ -138,6 +138,21 @@ enum APIIstemci {
         return (k, HesapBilgisi(j["hesap"]?.nesne))
     }
 
+    /// web-oturum.php: siteye şifresiz geçiş için tek kullanımlık bağlantı (admin, destek, kvkk)
+    static func webOturum(hedef: String, token: String) async throws -> URL {
+        var istek = URLRequest(url: adres("web-oturum.php"))
+        istek.httpMethod = "POST"
+        istek.setValue(token, forHTTPHeaderField: "X-MR-Token")
+        istek.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        istek.setValue("application/json", forHTTPHeaderField: "Accept")
+        istek.httpBody = try? JSONEncoder().encode(["hedef": hedef])
+        let j = try await gonder(istek)
+        guard let s = j["url"]?.metin, let u = URL(string: s), u.scheme == "https" else {
+            throw APIHatasi.cozumleme
+        }
+        return u
+    }
+
     /// hesap.php: profil, sifre, silme-talebi, silme-iptal
     static func hesap(islem: String, alanlar: [String: String], token: String) async throws -> HesapCevabi {
         var istek = URLRequest(url: adres("hesap.php"))

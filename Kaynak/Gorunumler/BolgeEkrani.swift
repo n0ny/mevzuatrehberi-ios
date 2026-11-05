@@ -66,7 +66,7 @@ struct BolgeEkrani: View {
         }.sorted(by: BolgeKurallari.once)
         let bugun = BolgeKurallari.bugun()
 
-        ScrollView {
+        YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 Kahraman(baslik: "\(deniz) Yer Yasakları",
                          aciklama: "Su ürünleri avcılığında bölge, yer ve dönem bakımından uygulanan yasak ve sınırlamaları hızlıca kontrol et.") {
@@ -424,6 +424,7 @@ struct BolgeHaritaPenceresi: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Renk.kart)
             }
+            .background(Color(UIColor.dinamik(0x08243A, 0x050E17)).ignoresSafeArea(edges: .top))
             .navigationTitle(baslik)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -147,7 +147,7 @@ struct YeniliklerEkrani: View {
         let liste = secili.isEmpty ? tumu : tumu.filter { $0.kategori == secili }
         let yeniSayisi = hazir ? tumu.filter { YenilikKurallari.yeniMi($0, sonGorme: oncekiGorme) }.count : 0
 
-        return ScrollView {
+        return YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 Kahraman(baslik: "Yenilikler", aciklama: "Uygulamaya eklenen mevzuat, özellik ve duyurular.") {
                     if yeniSayisi > 0 {

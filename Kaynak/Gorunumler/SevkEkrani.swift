@@ -8,7 +8,7 @@ struct SevkEkrani: View {
     var body: some View {
         let q = sorgu.trimmingCharacters(in: .whitespacesAndNewlines)
         let sonuc: [SevkKaydi] = q.isEmpty ? [] : depo.sevkler.filter { TRMetin.kelimeEslesir(normalMetin: $0.aramaNormal, sorgu: q) }
-        ScrollView {
+        YenilenebilirKaydirma {
             VStack(spacing: 0) {
                 Kahraman(baslik: "Sevk işlemleri",
                          aciklama: "İhlal, işlem, mevzuat, madde, kaynak veya sevk makamına göre ara.") {
