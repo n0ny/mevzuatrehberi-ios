@@ -26,6 +26,8 @@ final class VeriDeposu: ObservableObject {
     @Published private(set) var bolgeler: [Bolge] = []
     @Published private(set) var yenilikler: [Yenilik] = []
     @Published private(set) var kaynakListesi: KaynakListesi = .gomulu
+    /// Tekne / Gemi Kontrolü sayfaları (tekne.php ve alt sayfaları).
+    @Published private(set) var tekne: TekneIcerik?
     @Published private(set) var motor: MevzuatAramaMotoru = .bos
 
     @Published private(set) var sonKontrol: Date?
@@ -106,6 +108,7 @@ final class VeriDeposu: ObservableObject {
         yenilikler = []
         ihlalBaglari = []
         kaynakListesi = .gomulu
+        tekne = nil
         motor = .bos
         hashler = [:]
         sonKontrol = nil
@@ -133,6 +136,9 @@ final class VeriDeposu: ObservableObject {
                 }
             } catch APIHatasi.yetkisiz(_) {
                 return .yetkisiz
+            } catch is APIHatasi where Ayarlar.istegeBagliBolumler.contains(b) {
+                // Sunucu dosyası henüz yüklenmemişse diğer bölümler yine güncellenir.
+                continue
             } catch let hata as APIHatasi {
                 hataMesaji = hata.aciklama
                 return .hata(hata.aciklama)
@@ -182,6 +188,12 @@ final class VeriDeposu: ObservableObject {
                let veri = try? JSONEncoder().encode(satir),
                let liste = try? JSONDecoder().decode(KaynakListesi.self, from: veri) {
                 kaynakListesi = liste
+            }
+        case "tekne":
+            if let satir = v["tekne"]?.first,
+               let veri = try? JSONEncoder().encode(satir),
+               let icerik = try? JSONDecoder().decode(TekneIcerik.self, from: veri) {
+                tekne = icerik
             }
         default:
             break

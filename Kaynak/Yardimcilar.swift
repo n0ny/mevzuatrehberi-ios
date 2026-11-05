@@ -4,7 +4,9 @@ enum Ayarlar {
     static let siteAdresi = URL(string: "https://sg.barisguresci.com.tr/")!
     static let apiAdresi = URL(string: "https://sg.barisguresci.com.tr/api/")!
     /// İndirme sırası: küçük bölümler önce gelir, büyük sevk bölümü en son.
-    static let bolumler = ["kaynaklar", "yenilikler", "turler", "yaptirim", "bolge", "fiil", "mevzuat", "sevk"]
+    static let bolumler = ["kaynaklar", "yenilikler", "turler", "yaptirim", "bolge", "fiil", "mevzuat", "sevk", "tekne"]
+    /// Sunucuda henüz yoksa güncellemeyi durdurmayan bölümler (yeni eklenenler).
+    static let istegeBagliBolumler: Set<String> = ["tekne"]
     /// Uygulama öne geldiğinde en az bu kadar süre geçtiyse içerik kontrol edilir.
     static let kontrolAraligi: TimeInterval = 10 * 60
 }

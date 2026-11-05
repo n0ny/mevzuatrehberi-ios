@@ -129,6 +129,10 @@ struct AramaEkrani: View {
                 .font(.headline)
                 .foregroundColor(Renk.murekkep)
                 .padding(.top, 6)
+            NavigationLink(destination: TekneEkrani()) {
+                HizliKart(sembol: "ferry", baslik: "Tekne / Gemi Kontrolü",
+                          aciklama: "Belge, ekipman, fiziki durum ve diğer kontroller")
+            }
             NavigationLink(destination: YaptirimEkrani()) {
                 HizliKart(sembol: "scalemass", baslik: "1380 İDARİ YAPTIRIM REHBERİ",
                           aciklama: "2026 yılı su ürünleri idari yaptırım bilgilerini hızlıca bul")

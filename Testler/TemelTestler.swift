@@ -179,4 +179,36 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(BolgeKurallari.googleHarita(BolgeHaritasi.Nokta(enlem: 36.7, boylam: 36.19, metin: ""))?.absoluteString,
                        "https://www.google.com/maps/search/?api=1&query=36.700000%2C36.190000")
     }
+
+    /// Sunucudaki tekne.json, telefonda saklanan biçimden (Satir) geri okunabilmeli.
+    func testTekneIcerikCozumleme() throws {
+        let s = try satir(#"""
+        {"surum": 1, "kok": "tekne", "sayfalar": {
+          "tekne": {"baslik": "Tekne / gemi kontrolü", "aciklama": "Seçin.", "bloklar": [
+            {"tur": "etiket", "metin": "Denetim Türü"},
+            {"tur": "kartlar", "kartlar": [{"baslik": "Balıkçı Teknesi", "aciklama": "x", "hedef": "balikci"},
+                                           {"baslik": "Tür / Boy / Miktar", "yakinda": "Yakında aktif olacak"}]}
+          ]},
+          "kucuk": {"baslik": "Kontrol Çek Listesi", "bloklar": [
+            {"tur": "etiket", "metin": "İSTENEN", "sayi": "10 Kalem"},
+            {"tur": "liste", "maddeler": [{"simge": "book", "baslik": "Ruhsatname", "etiket": "Kontrol:", "alt": ["a", "b"]},
+                                          {"baslik": "Can Yeleği", "not": "(DEB)"}]},
+            {"tur": "kaynak", "baslik": "Resmî kaynak", "ad": "Yönetmelik", "url": "https://www.resmigazete.gov.tr/x.htm", "site": "resmigazete.gov.tr"}
+          ]}
+        }}
+        """#)
+        let veri = try JSONEncoder().encode(s)
+        let t = try JSONDecoder().decode(TekneIcerik.self, from: veri)
+        XCTAssertEqual(t.kokSayfa, "tekne")
+        XCTAssertEqual(t.sayfalar.count, 2)
+        let kok = try XCTUnwrap(t.sayfalar["tekne"])
+        XCTAssertEqual(kok.bloklar[1].kartlar?.first?.hedef, "balikci")
+        XCTAssertEqual(kok.bloklar[1].kartlar?.last?.yakinda, "Yakında aktif olacak")
+        let liste = try XCTUnwrap(t.sayfalar["kucuk"]?.bloklar[1].maddeler)
+        XCTAssertEqual(liste[0].alt ?? [], ["a", "b"])
+        XCTAssertEqual(liste[1].not, "(DEB)")
+        XCTAssertEqual(t.sayfalar["kucuk"]?.bloklar[0].sayi, "10 Kalem")
+        XCTAssertEqual(TekneSimge.madde("lifebuoy"), "lifepreserver")
+        XCTAssertEqual(TekneSimge.kart(nil, baslik: "Tür / Boy / Miktar"), "ruler")
+    }
 }

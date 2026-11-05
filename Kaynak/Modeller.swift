@@ -395,3 +395,51 @@ struct Yenilik: Identifiable, Hashable {
         olusturma = s.secimli("created_at")
     }
 }
+
+// MARK: - Tekne / Gemi Kontrolü (tekne.php ve alt sayfaları)
+
+/// Sunucudaki api/tekne.json: sitedeki tekne sayfalarının metinleri birebir.
+struct TekneIcerik: Codable {
+    let kok: String?
+    let sayfalar: [String: TekneSayfa]
+
+    var kokSayfa: String { return kok ?? "tekne" }
+}
+
+struct TekneSayfa: Codable {
+    let baslik: String
+    let aciklama: String?
+    let bloklar: [TekneBlok]
+}
+
+/// Sayfadaki bir bölüm. "tur": etiket, kartlar, liste, bilgi, dayanak, aciklama, acilir, uyari, not, kaynak, altnot
+struct TekneBlok: Codable {
+    let tur: String
+    let metin: String?
+    let sayi: String?
+    let baslik: String?
+    let kartlar: [TekneKart]?
+    let maddeler: [TekneMadde]?
+    let simge: String?
+    let ozet: String?
+    let aciklama: String?
+    let mevzuat: String?
+    let ad: String?
+    let url: String?
+    let site: String?
+}
+
+struct TekneKart: Codable {
+    let baslik: String
+    let aciklama: String?
+    let hedef: String?
+    let yakinda: String?
+}
+
+struct TekneMadde: Codable {
+    let baslik: String
+    let not: String?
+    let simge: String?
+    let etiket: String?
+    let alt: [String]?
+}

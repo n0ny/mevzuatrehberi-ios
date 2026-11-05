@@ -75,7 +75,6 @@ struct AnaEkran: View {
     @EnvironmentObject var depo: VeriDeposu
     @Environment(\.colorScheme) private var sema
     @AppStorage("gorunum") private var gorunum = "otomatik"
-    @State private var yeniSayisi = 0
     @State private var icSayfa: IcWebSayfasi?
 
     var body: some View {
@@ -93,14 +92,14 @@ struct AnaEkran: View {
                                 aciklama: "Kanun, yönetmelik, genelge ve diğer düzenlemelerde hızlı arama yap",
                                 ana: true)
                     }
-                    NavigationLink(destination: TurlerEkrani()) {
-                        AnaKart(sembol: "fish", baslik: "Tür kartları",
-                                aciklama: "Asgari av boyu ve yasak dönemleri")
+                    // Tür kartları ve Yenilikler alt sekmelerde olduğu için burada tekrar edilmez.
+                    NavigationLink(destination: TekneEkrani()) {
+                        AnaKart(sembol: "ferry", baslik: "Tekne / Gemi Kontrolü",
+                                aciklama: "Belge, ekipman, fiziki durum ve diğer kontroller")
                     }
-                    NavigationLink(destination: YeniliklerEkrani()) {
-                        AnaKart(sembol: "text.bubble", baslik: "Yenilikler",
-                                aciklama: "Eklenen mevzuat ve duyurular",
-                                rozet: yeniSayisi > 0 ? "\(yeniSayisi) yeni" : nil)
+                    NavigationLink(destination: BolgeEkrani()) {
+                        AnaKart(sembol: "map", baslik: "Türkiye Geneli Bölge Yasakları",
+                                aciklama: "Deniz bölgelerine göre yasak ve kısıtlamaları görüntüle")
                     }
 
                     VStack(alignment: .center, spacing: 8) {
@@ -142,8 +141,6 @@ struct AnaEkran: View {
         .fullScreenCover(item: $icSayfa) { s in
             IcWebEkrani(sayfa: s)
         }
-        .onAppear { yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
-        .onChange(of: depo.yenilikler.count) { _ in yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
     }
 
     @ViewBuilder
