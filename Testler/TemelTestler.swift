@@ -266,4 +266,21 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(YonetimKurallari.ara(v.kullanicilar, "B@A").map { $0.id }, [3])
         XCTAssertEqual(v.kullanicilar[1].basHarf, "A")
     }
+
+    /// Yakında eklenecekler: iPhone uygulamasını duyuran madde iPhone'da gizlenir.
+    func testYakindaFiltre() throws {
+        let j = try satir(#"""
+        {"baslik": "Yakında eklenecek özellikler", "aciklama": "a", "etiket": "Yol haritası", "not": "n",
+         "maddeler": [
+           {"baslik": "iPhone (iOS) uygulaması", "durum": "Yakında", "durum_turu": "next", "metin": "x", "renk": "navy"},
+           {"baslik": "Gece modu", "durum": "Eklendi", "durum_turu": "done", "metin": "y", "renk": "green"}
+         ]}
+        """#)
+        let c = JSONDecoder()
+        c.keyDecodingStrategy = .convertFromSnakeCase
+        let y = try c.decode(YakindaIcerik.self, from: JSONEncoder().encode(j))
+        XCTAssertEqual(y.maddeler.count, 2)
+        XCTAssertEqual(y.uygulamaMaddeleri.map { $0.baslik }, ["Gece modu"])
+        XCTAssertEqual(y.maddeler[1].durumTuru, "done")
+    }
 }

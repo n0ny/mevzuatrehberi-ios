@@ -78,6 +78,7 @@ struct AnaEkran: View {
     @State private var icSayfa: IcWebSayfasi?
     /// dashboard.php rozeti: bu haftanın setinde cevap bekleyen soru sayısı.
     @State private var bekleyenSoru = 0
+    @State private var yakindaAcik = false
 
     var body: some View {
         YenilenebilirKaydirma {
@@ -107,6 +108,12 @@ struct AnaEkran: View {
                         AnaKart(sembol: "questionmark.circle", baslik: "Haftanın soruları",
                                 aciklama: "Kısa sorularla bilgini tazele",
                                 rozet: bekleyenSoru > 0 ? "\(bekleyenSoru) soru" : nil)
+                    }
+                    Button {
+                        yakindaAcik = true
+                    } label: {
+                        AnaKart(sembol: "sparkles", baslik: "Yakında eklenecekler",
+                                aciklama: "Planlanan yenilikleri gör")
                     }
                     NavigationLink(destination: OneriEkrani()) {
                         AnaKart(sembol: "lightbulb", baslik: "Öneri ve geri bildirim",
@@ -153,6 +160,11 @@ struct AnaEkran: View {
             IcWebEkrani(sayfa: s)
         }
         .onAppear { bekleyenleriYukle() }
+        .sheet(isPresented: $yakindaAcik) {
+            YakindaEkrani()
+                .environmentObject(oturum)
+                .environmentObject(depo)
+        }
     }
 
     private func bekleyenleriYukle() {

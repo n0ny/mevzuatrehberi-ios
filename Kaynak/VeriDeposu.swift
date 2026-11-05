@@ -28,6 +28,8 @@ final class VeriDeposu: ObservableObject {
     @Published private(set) var kaynakListesi: KaynakListesi = .gomulu
     /// Tekne / Gemi Kontrolü sayfaları (tekne.php ve alt sayfaları).
     @Published private(set) var tekne: TekneIcerik?
+    /// "Yakında eklenecek özellikler" (dashboard.php penceresi).
+    @Published private(set) var yakinda: YakindaIcerik?
     @Published private(set) var motor: MevzuatAramaMotoru = .bos
 
     @Published private(set) var sonKontrol: Date?
@@ -109,6 +111,7 @@ final class VeriDeposu: ObservableObject {
         ihlalBaglari = []
         kaynakListesi = .gomulu
         tekne = nil
+        yakinda = nil
         motor = .bos
         hashler = [:]
         sonKontrol = nil
@@ -194,6 +197,13 @@ final class VeriDeposu: ObservableObject {
                let veri = try? JSONEncoder().encode(satir),
                let icerik = try? JSONDecoder().decode(TekneIcerik.self, from: veri) {
                 tekne = icerik
+            }
+        case "yakinda":
+            if let satir = v["yakinda"]?.first,
+               let veri = try? JSONEncoder().encode(satir) {
+                let cozucu = JSONDecoder()
+                cozucu.keyDecodingStrategy = .convertFromSnakeCase
+                yakinda = try? cozucu.decode(YakindaIcerik.self, from: veri)
             }
         default:
             break

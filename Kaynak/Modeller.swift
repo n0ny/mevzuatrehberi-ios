@@ -443,3 +443,28 @@ struct TekneMadde: Codable {
     let etiket: String?
     let alt: [String]?
 }
+
+// MARK: - Yakında eklenecek özellikler (dashboard.php penceresi)
+
+struct YakindaIcerik: Codable {
+    struct Madde: Codable {
+        let baslik: String
+        let durum: String
+        let durumTuru: String
+        let metin: String
+        let renk: String
+    }
+    let baslik: String
+    let aciklama: String
+    let etiket: String
+    let maddeler: [Madde]
+    let not: String
+
+    /// iPhone uygulamasının kendisini duyuran madde iPhone'da gösterilmez.
+    var uygulamaMaddeleri: [Madde] {
+        return maddeler.filter { m in
+            let b = m.baslik.lowercased(with: TRMetin.tr)
+            return !(b.contains("iphone") || b.contains("ios"))
+        }
+    }
+}
