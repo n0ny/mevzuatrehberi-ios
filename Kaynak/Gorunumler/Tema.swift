@@ -405,14 +405,25 @@ struct ResmiKaynakListesi: View {
 struct YenilenebilirKaydirma<Icerik: View>: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
-    @ViewBuilder let icerik: () -> Icerik
+    /// Verilirse içerik güncellemesi yerine bu yapılır (ör. Haftanın soruları).
+    let eylem: (() async -> Void)?
+    let icerik: () -> Icerik
+
+    init(eylem: (() async -> Void)? = nil, @ViewBuilder icerik: @escaping () -> Icerik) {
+        self.eylem = eylem
+        self.icerik = icerik
+    }
 
     var body: some View {
         ScrollView {
             icerik()
                 .background(
                     YenilemeBaglayici {
-                        await Eylemler.guncelle(oturum: oturum, depo: depo)
+                        if let e = eylem {
+                            await e()
+                        } else {
+                            await Eylemler.guncelle(oturum: oturum, depo: depo)
+                        }
                     }
                     .frame(width: 0, height: 0)
                 )

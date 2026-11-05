@@ -211,4 +211,36 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(TekneSimge.madde("lifebuoy"), "lifepreserver")
         XCTAssertEqual(TekneSimge.kart(nil, baslik: "Tür / Boy / Miktar"), "ruler")
     }
+
+    /// api/bilgi.php cevabı (telefona JSONDeger olarak gelir) BilgiVerisi'ne çözülebilmeli.
+    func testBilgiVerisiCozumleme() throws {
+        let j = try satir(#"""
+        {"ok": true, "soru_puani": 20, "yonetici": false, "bekleyen": 1,
+         "set": {"id": 1, "baslik": "Hafta 45", "tarih": "3 Kasım 2026 – 9 Kasım 2026", "bitis": "9 Kasım 2026", "acik": true, "arsiv": false},
+         "sorular": [
+           {"id": 1, "no": 1, "soru": "S1", "siklar": [{"k": "a", "harf": "A", "metin": "2"}, {"k": "b", "harf": "B", "metin": "4"}],
+            "kilitli": true, "cevap": {"secilen": "a", "dogru_mu": false}, "dogru": "b", "dogru_harf": "B", "aciklama": "Açıklama", "kaynak": null},
+           {"id": 2, "no": 2, "soru": "S2", "siklar": [{"k": "a", "harf": "A", "metin": "x"}], "kilitli": false, "cevap": null}
+         ],
+         "ozet": {"toplam": 2, "cevap": 1, "dogru": 0, "puan": 0, "tam_puan": 40, "tamamlandi": false, "siram": 0},
+         "siralama": {"hafta": {"liste": [{"sira": 1, "ad": "A. Yılmaz", "puan": 20, "ben": false}], "siram": 0, "katilimci": 1},
+                      "genel": {"liste": [], "siram": 0, "katilimci": 0}},
+         "gecmis": [{"id": 2, "baslik": "Hafta 44", "tarih": "27 Ekim 2026 – 2 Kasım 2026", "katildi": true, "puan": 20}]}
+        """#)
+        let veri = try JSONEncoder().encode(j)
+        let c = JSONDecoder()
+        c.keyDecodingStrategy = .convertFromSnakeCase
+        let v = try c.decode(BilgiVerisi.self, from: veri)
+        XCTAssertEqual(v.soruPuani, 20)
+        XCTAssertEqual(v.bekleyen, 1)
+        XCTAssertEqual(v.set?.acik, true)
+        XCTAssertEqual(v.sorular.count, 2)
+        XCTAssertEqual(v.sorular[0].cevap?.dogruMu, false)
+        XCTAssertEqual(v.sorular[0].dogruHarf, "B")
+        XCTAssertNil(v.sorular[0].kaynak)
+        XCTAssertNil(v.sorular[1].dogru)
+        XCTAssertEqual(v.ozet.tamPuan, 40)
+        XCTAssertEqual(v.siralama.hafta?.liste.first?.ad, "A. Yılmaz")
+        XCTAssertEqual(v.gecmis.first?.katildi, true)
+    }
 }

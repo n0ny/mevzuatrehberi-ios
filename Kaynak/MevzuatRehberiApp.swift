@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct MevzuatRehberiApp: App {
@@ -13,6 +14,8 @@ struct MevzuatRehberiApp: App {
                                    directory: nil)
         Renk.gezinmeCubugunuAyarla()
         Renk.sekmeCubugunuAyarla()
+        // iOS 15'te TextEditor'ün kendi zemini (Öneri ekranı) kutu rengini kapatmasın.
+        UITextView.appearance().backgroundColor = .clear
     }
 
     var body: some Scene {

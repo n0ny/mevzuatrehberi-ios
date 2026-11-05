@@ -213,6 +213,56 @@ enum APIIstemci {
         return j["mesaj"]?.metin ?? "Şifre yenileme bağlantısı gönderildi."
     }
 
+    private static func tokenliIstek(_ yol: String, sorgu: [URLQueryItem] = [], token: String,
+                                     govde: [String: String]? = nil) -> URLRequest {
+        var istek = URLRequest(url: adres(yol, sorgu: sorgu))
+        istek.setValue(token, forHTTPHeaderField: "X-MR-Token")
+        istek.setValue("application/json", forHTTPHeaderField: "Accept")
+        if let g = govde {
+            istek.httpMethod = "POST"
+            istek.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            istek.httpBody = try? JSONEncoder().encode(g)
+        }
+        return istek
+    }
+
+    /// oneri.php GET: hesabın e-postası ve konu listesi.
+    static func oneriBilgisi(token: String) async throws -> (eposta: String, konular: [String]) {
+        let j = try await gonder(tokenliIstek("oneri.php", token: token))
+        let konular = (j["konular"]?.dizi ?? []).compactMap { $0.metin }
+        return (j["eposta"]?.metin ?? "", konular)
+    }
+
+    /// oneri.php POST (sitedeki oneri.php ile aynı kurallar). Başarı mesajını döndürür.
+    static func oneriGonder(konu: String, mesaj: String, eposta: String, token: String) async throws -> String {
+        let j = try await gonder(tokenliIstek("oneri.php", token: token,
+                                              govde: ["konu": konu, "mesaj": mesaj, "email": eposta]))
+        return j["mesaj"]?.metin ?? "Öneriniz başarıyla iletildi."
+    }
+
+    /// bilgi.php GET: haftanın soruları (setId verilirse geçmiş set).
+    static func bilgi(setId: Int?, token: String) async throws -> BilgiVerisi {
+        var sorgu: [URLQueryItem] = []
+        if let s = setId {
+            sorgu.append(URLQueryItem(name: "set", value: String(s)))
+        }
+        let j = try await gonder(tokenliIstek("bilgi.php", sorgu: sorgu, token: token))
+        do {
+            let veri = try JSONEncoder().encode(j)
+            let cozucu = JSONDecoder()
+            cozucu.keyDecodingStrategy = .convertFromSnakeCase
+            return try cozucu.decode(BilgiVerisi.self, from: veri)
+        } catch {
+            throw APIHatasi.cozumleme
+        }
+    }
+
+    /// bilgi.php POST: cevap gönder.
+    static func bilgiCevapla(soruId: Int, secim: String, token: String) async throws {
+        _ = try await gonder(tokenliIstek("bilgi.php", token: token,
+                                          govde: ["soru_id": String(soruId), "secim": secim]))
+    }
+
     static func icerik(bolum: String, h: String?, token: String) async throws -> IcerikCevabi {
         var sorgu = [URLQueryItem(name: "bolum", value: bolum)]
         if let h = h, !h.isEmpty {

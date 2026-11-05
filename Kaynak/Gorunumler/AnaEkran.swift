@@ -76,6 +76,8 @@ struct AnaEkran: View {
     @Environment(\.colorScheme) private var sema
     @AppStorage("gorunum") private var gorunum = "otomatik"
     @State private var icSayfa: IcWebSayfasi?
+    /// dashboard.php rozeti: bu haftanın setinde cevap bekleyen soru sayısı.
+    @State private var bekleyenSoru = 0
 
     var body: some View {
         YenilenebilirKaydirma {
@@ -100,6 +102,15 @@ struct AnaEkran: View {
                     NavigationLink(destination: BolgeEkrani()) {
                         AnaKart(sembol: "map", baslik: "Türkiye Geneli Bölge Yasakları",
                                 aciklama: "Deniz bölgelerine göre yasak ve kısıtlamaları görüntüle")
+                    }
+                    NavigationLink(destination: BilgiEkrani()) {
+                        AnaKart(sembol: "questionmark.circle", baslik: "Haftanın soruları",
+                                aciklama: "Kısa sorularla bilgini tazele",
+                                rozet: bekleyenSoru > 0 ? "\(bekleyenSoru) soru" : nil)
+                    }
+                    NavigationLink(destination: OneriEkrani()) {
+                        AnaKart(sembol: "lightbulb", baslik: "Öneri ve geri bildirim",
+                                aciklama: "Fikrini ya da eksiği bize ilet")
                     }
 
                     VStack(alignment: .center, spacing: 8) {
@@ -140,6 +151,16 @@ struct AnaEkran: View {
         }
         .fullScreenCover(item: $icSayfa) { s in
             IcWebEkrani(sayfa: s)
+        }
+        .onAppear { bekleyenleriYukle() }
+    }
+
+    private func bekleyenleriYukle() {
+        guard let t = oturum.token else { return }
+        Task {
+            if let v = try? await APIIstemci.bilgi(setId: nil, token: t) {
+                bekleyenSoru = v.bekleyen
+            }
         }
     }
 
