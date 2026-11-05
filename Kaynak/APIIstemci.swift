@@ -123,7 +123,8 @@ enum APIIstemci {
         return j
     }
 
-    static func giris(kullanici: String, sifre: String) async throws -> (token: String, kullanici: KullaniciOzet) {
+    /// karsilama: login.php'deki gibi 1., 4., 7. ... girişte hoş geldin penceresi gösterilsin mi
+    static func giris(kullanici: String, sifre: String) async throws -> (token: String, kullanici: KullaniciOzet, karsilama: Bool) {
         var istek = URLRequest(url: adres("giris.php"))
         istek.httpMethod = "POST"
         istek.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -135,7 +136,7 @@ enum APIIstemci {
               let k = KullaniciOzet(j["kullanici"]?.nesne) else {
             throw APIHatasi.cozumleme
         }
-        return (token, k)
+        return (token, k, j["karsilama"]?.mantik ?? false)
     }
 
     static func ben(token: String) async throws -> (kullanici: KullaniciOzet, hesap: HesapBilgisi?) {

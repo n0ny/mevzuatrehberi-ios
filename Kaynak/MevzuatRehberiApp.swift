@@ -39,7 +39,16 @@ struct KokGorunum: View {
             case .girisGerekli:
                 GirisEkrani()
             case .acik:
-                AnaSekmeler()
+                ZStack {
+                    AnaSekmeler()
+                    if oturum.karsilamaBekliyor {
+                        KarsilamaPenceresi {
+                            withAnimation(.easeOut(duration: 0.2)) { oturum.karsilamaOnayla() }
+                        }
+                        .transition(.opacity)
+                        .zIndex(1)
+                    }
+                }
             }
         }
         .preferredColorScheme(gorunum == "acik" ? .light : (gorunum == "koyu" ? .dark : nil))

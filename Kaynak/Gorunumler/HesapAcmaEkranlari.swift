@@ -137,7 +137,7 @@ struct KayitEkrani: View {
             }
             .buttonStyle(.plain)
             (Text("Kullanıcı Sözleşmesini ")
-                + Text("okudum").bold().underline().foregroundColor(Color(UIColor(onaltilik: 0x7FC4FF)))
+                + Text("okudum").bold().underline().foregroundColor(GirisRenk.baglanti)
                 + Text(" ve kabul ediyorum."))
                 .font(.footnote)
                 .foregroundColor(.white.opacity(0.9))
@@ -154,7 +154,7 @@ struct KayitEkrani: View {
             Text("Zaten hesabın var mı?")
                 .foregroundColor(.white.opacity(0.8))
             Button("Giriş Yap") { kapat() }
-                .foregroundColor(.white)
+                .foregroundColor(GirisRenk.baglanti)
                 .font(.footnote.weight(.bold))
             Spacer()
         }
@@ -270,7 +270,7 @@ struct SifremiUnuttumEkrani: View {
                                 Spacer()
                                 Button("Giriş sayfasına dön") { kapat() }
                                     .font(.footnote.weight(.bold))
-                                    .foregroundColor(Color(UIColor(onaltilik: 0x7FC4FF)))
+                                    .foregroundColor(GirisRenk.baglanti)
                                 Spacer()
                             }
                         }

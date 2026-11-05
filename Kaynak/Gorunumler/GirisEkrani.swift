@@ -13,6 +13,10 @@ struct GirisEkrani: View {
     @State private var bilgi: String?
     @State private var kayitAcik = false
     @State private var sifreUnuttumAcik = false
+    @State private var icSayfa: IcWebSayfasi?
+    /// index.php'deki "Beni hatırla": yalnızca kullanıcı adı bu telefonda hatırlanır.
+    @AppStorage("giris.hatirla") private var hatirla = false
+    @AppStorage("giris.kullanici") private var hatirlananKullanici = ""
 
     private enum Alan { case kullanici, sifre }
     @FocusState private var odak: Alan?
@@ -76,13 +80,26 @@ struct GirisEkrani: View {
                         }
 
                         HStack {
+                            Button {
+                                hatirla.toggle()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Image(systemName: hatirla ? "checkmark.square.fill" : "square")
+                                        .font(.system(size: 19))
+                                        .foregroundColor(hatirla ? GirisRenk.baglanti : .white.opacity(0.7))
+                                    Text("Beni hatırla")
+                                        .foregroundColor(.white.opacity(0.9))
+                                }
+                            }
+                            .buttonStyle(.plain)
                             Spacer()
                             Button("Şifremi unuttum?") {
                                 sifreUnuttumAcik = true
                             }
-                            .font(.footnote.weight(.semibold))
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundColor(GirisRenk.baglanti)
+                            .font(.footnote.weight(.bold))
                         }
+                        .font(.footnote.weight(.semibold))
 
                         CamAnaDugme(baslik: bekliyor ? "Giriş yapılıyor…" : "Giriş Yap",
                                     bekliyor: bekliyor,
@@ -92,20 +109,34 @@ struct GirisEkrani: View {
                         HStack(spacing: 4) {
                             Text("Hesabın yok mu?")
                                 .foregroundColor(.white.opacity(0.8))
-                            Button("Kayıt ol") {
+                            Button("Kayıt Ol") {
                                 kayitAcik = true
                             }
-                            .foregroundColor(.white)
+                            .foregroundColor(GirisRenk.baglanti)
                             .font(.footnote.weight(.bold))
                         }
                         .font(.footnote)
                     }
                     .camKart()
 
-                    Text(Notlar.resmiDegil)
-                        .font(.caption2)
-                        .foregroundColor(.white.opacity(0.65))
-                        .multilineTextAlignment(.center)
+                    // index.php alt bilgi + Gizlilik Politikası
+                    VStack(spacing: 6) {
+                        Text("ⓘ Bu uygulama resmî bir kurum uygulaması değildir.")
+                            .font(.caption.weight(.bold))
+                            .foregroundColor(.white.opacity(0.85))
+                        Text("İçerikler mevzuata erişim ve referans amacıyla sunulmaktadır. Güncel mevzuat metinleri ve yetkili kaynaklar esas alınmalıdır.")
+                            .font(.caption2)
+                            .foregroundColor(.white.opacity(0.65))
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button("Gizlilik Politikası") {
+                            icSayfa = IcWebSayfasi(baslik: "Gizlilik Politikası",
+                                                   url: Ayarlar.siteAdresi.appendingPathComponent("gizlilik-politikasi.php"))
+                        }
+                        .font(.caption.weight(.heavy))
+                        .foregroundColor(GirisRenk.baglanti)
+                        .padding(.top, 4)
+                    }
+                    .multilineTextAlignment(.center)
                 }
                 .padding(.horizontal, 22)
                 .padding(.bottom, 30)
@@ -119,6 +150,17 @@ struct GirisEkrani: View {
         }
         .sheet(isPresented: $sifreUnuttumAcik) {
             SifremiUnuttumEkrani()
+        }
+        .fullScreenCover(item: $icSayfa) { s in
+            IcWebEkrani(sayfa: s)
+        }
+        .onAppear {
+            if hatirla && kullanici.isEmpty {
+                kullanici = hatirlananKullanici
+            }
+        }
+        .onChange(of: hatirla) { acik in
+            if !acik { hatirlananKullanici = "" }
         }
     }
 
@@ -138,6 +180,7 @@ struct GirisEkrani: View {
             do {
                 try await oturum.girisYap(kullanici: k, sifre: s)
                 sifre = ""
+                hatirlananKullanici = hatirla ? k : ""
                 _ = await oturum.kontrolEt()
                 if let t = oturum.token {
                     _ = await depo.guncelle(token: t)
@@ -153,6 +196,70 @@ struct GirisEkrani: View {
 }
 
 // MARK: - Giriş, kayıt ve şifre ekranlarının ortak parçaları
+
+enum GirisRenk {
+    /// Sitedeki giriş sayfasının bağlantı rengi (#63d1ff).
+    static let baglanti = Color(UIColor(onaltilik: 0x63D1FF))
+}
+
+/// dashboard.php'deki "Hoş geldiniz" penceresi (login.php kuralı: 1., 4., 7. ... girişte).
+struct KarsilamaPenceresi: View {
+    let tamam: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+
+            VStack(spacing: 14) {
+                Image(systemName: "book")
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(Renk.mavi)
+                    .frame(width: 58, height: 58)
+                    .background(Renk.tint)
+                    .clipShape(Circle())
+
+                Text("Hoş geldiniz")
+                    .font(.system(size: 24, weight: .bold, design: .serif))
+                    .foregroundColor(Renk.murekkep)
+                Text("Mevzuat Rehberi'ne hoş geldiniz.")
+                    .font(.subheadline)
+                    .foregroundColor(Renk.soluk)
+
+                VStack(alignment: .leading, spacing: 10) {
+                    (Text("Bilgilendirme: ").bold()
+                        + Text("Mevzuat Rehberi, mevzuat ve ilgili bilgilere daha hızlı ulaşılmasına yardımcı olmak amacıyla hazırlanmış bağımsız bir uygulamadır."))
+                    Text("Uygulama herhangi bir Bakanlık, kamu kurumu veya başka bir resmî kurumun resmî uygulaması değildir.")
+                    Text("Mevzuat zaman içerisinde değişebileceğinden, işlem ve kararlarınızda gerektiğinde yürürlükteki resmî mevzuat ve yetkili kurum kaynaklarını ayrıca kontrol ediniz.")
+                }
+                .font(.footnote)
+                .foregroundColor(Renk.murekkep)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(14)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Renk.ikincil)
+                .cornerRadius(14)
+                .overlay(RoundedRectangle(cornerRadius: 14).stroke(Renk.cizgi, lineWidth: 1))
+
+                Button(action: tamam) {
+                    Text("Anladım, devam et")
+                        .fontWeight(.bold)
+                        .frame(maxWidth: .infinity)
+                        .padding(14)
+                        .foregroundColor(.white)
+                        .background(Renk.lacivert)
+                        .cornerRadius(14)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(22)
+            .background(Renk.kart)
+            .cornerRadius(24)
+            .shadow(color: Color.black.opacity(0.3), radius: 24, x: 0, y: 12)
+            .padding(.horizontal, 24)
+        }
+    }
+}
 
 /// Arka plan görseli + koyu geçiş (sitedeki giriş sayfası).
 struct GirisArkaPlani: View {

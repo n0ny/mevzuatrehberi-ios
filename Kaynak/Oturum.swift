@@ -10,6 +10,8 @@ final class Oturum: ObservableObject {
 
     @Published private(set) var durum: Durum
     @Published private(set) var hesap: HesapBilgisi?
+    /// Girişten sonra "Hoş geldiniz" penceresi gösterilecek mi (dashboard.php ile aynı kural).
+    @Published var karsilamaBekliyor = false
     private(set) var token: String?
 
     private static let kullaniciAnahtari = "oturum.kullanici"
@@ -34,7 +36,17 @@ final class Oturum: ObservableObject {
         AnahtarZinciri.yaz(sonuc.token)
         token = sonuc.token
         Oturum.kullaniciKaydet(sonuc.kullanici)
+        karsilamaBekliyor = sonuc.karsilama
         durum = .acik(sonuc.kullanici)
+    }
+
+    /// "Anladım, devam et": pencere kapanır, sunucuda welcome_seen işaretlenir (dashboard.php gibi).
+    func karsilamaOnayla() {
+        karsilamaBekliyor = false
+        guard let t = token else { return }
+        Task {
+            _ = try? await APIIstemci.hesap(islem: "karsilama", alanlar: [:], token: t)
+        }
     }
 
     /// Giriş hâlâ geçerli mi? Geçersizse false döner. İnternet yoksa dokunmaz.
@@ -68,6 +80,7 @@ final class Oturum: ObservableObject {
         UserDefaults.standard.removeObject(forKey: Oturum.kullaniciAnahtari)
         token = nil
         hesap = nil
+        karsilamaBekliyor = false
         durum = .girisGerekli
     }
 
