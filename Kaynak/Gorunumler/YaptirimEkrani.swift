@@ -273,7 +273,7 @@ struct YaptirimEkrani: View {
         }
         .background(Renk.zemin.ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
-        .navigationBarTitleDisplayMode(.inline)
+        .markaBasligi()
     }
 }
 

@@ -41,6 +41,27 @@ struct KullaniciOzet: Codable, Equatable {
     }
 }
 
+/// hesabim.php'deki hesap durumu.
+struct HesapBilgisi: Codable, Equatable {
+    let sonGiris: String?
+    let aktif: Bool
+    let silmeTalebi: Bool
+    let silmeKalan: String?
+
+    init?(_ o: [String: JSONDeger]?) {
+        guard let o = o else { return nil }
+        sonGiris = o.secimli("son_giris")
+        aktif = o["aktif"]?.mantik ?? true
+        silmeTalebi = o["silme_talebi"]?.mantik ?? false
+        silmeKalan = o.secimli("silme_kalan")
+    }
+}
+
+struct HesapCevabi {
+    let mesaj: String
+    let token: String?
+}
+
 struct IcerikCevabi {
     let degisti: Bool
     let h: String
@@ -106,7 +127,7 @@ enum APIIstemci {
         return (token, k)
     }
 
-    static func ben(token: String) async throws -> KullaniciOzet {
+    static func ben(token: String) async throws -> (kullanici: KullaniciOzet, hesap: HesapBilgisi?) {
         var istek = URLRequest(url: adres("ben.php"))
         istek.setValue(token, forHTTPHeaderField: "X-MR-Token")
         istek.setValue("application/json", forHTTPHeaderField: "Accept")
@@ -114,7 +135,21 @@ enum APIIstemci {
         guard let k = KullaniciOzet(j["kullanici"]?.nesne) else {
             throw APIHatasi.cozumleme
         }
-        return k
+        return (k, HesapBilgisi(j["hesap"]?.nesne))
+    }
+
+    /// hesap.php: profil, sifre, silme-talebi, silme-iptal
+    static func hesap(islem: String, alanlar: [String: String], token: String) async throws -> HesapCevabi {
+        var istek = URLRequest(url: adres("hesap.php"))
+        istek.httpMethod = "POST"
+        istek.setValue(token, forHTTPHeaderField: "X-MR-Token")
+        istek.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        istek.setValue("application/json", forHTTPHeaderField: "Accept")
+        var govde = alanlar
+        govde["islem"] = islem
+        istek.httpBody = try? JSONEncoder().encode(govde)
+        let j = try await gonder(istek)
+        return HesapCevabi(mesaj: j["mesaj"]?.metin ?? "İşlem tamamlandı.", token: j["token"]?.metin)
     }
 
     static func icerik(bolum: String, h: String?, token: String) async throws -> IcerikCevabi {

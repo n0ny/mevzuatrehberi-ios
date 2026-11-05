@@ -1,78 +1,153 @@
 import SwiftUI
+import SafariServices
+
+/// Uygulamanın alt sekmeleri.
+struct AnaSekmeler: View {
+    @EnvironmentObject var depo: VeriDeposu
+    @State private var secili = 0
+    @State private var yeniSayisi = 0
+
+    var body: some View {
+        TabView(selection: $secili) {
+            NavigationView { AnaEkran() }
+                .navigationViewStyle(.stack)
+                .tabItem { Label("Ana sayfa", systemImage: "house") }
+                .tag(0)
+            NavigationView { AramaEkrani() }
+                .navigationViewStyle(.stack)
+                .tabItem { Label("Mevzuat", systemImage: "magnifyingglass") }
+                .tag(1)
+            NavigationView { TurlerEkrani() }
+                .navigationViewStyle(.stack)
+                .tabItem {
+                    Label {
+                        Text("Türler")
+                    } icon: {
+                        Image(systemName: UIImage(systemName: "fish") != nil ? "fish" : "leaf")
+                    }
+                }
+                .tag(2)
+            NavigationView { YeniliklerEkrani() }
+                .navigationViewStyle(.stack)
+                .tabItem { Label("Yenilikler", systemImage: "text.bubble") }
+                .badge(yeniSayisi)
+                .tag(3)
+            NavigationView { HesapEkrani() }
+                .navigationViewStyle(.stack)
+                .tabItem { Label("Hesabım", systemImage: "person.crop.circle") }
+                .tag(4)
+        }
+        .onAppear { rozetiGuncelle() }
+        .onChange(of: depo.yenilikler.count) { _ in rozetiGuncelle() }
+        .onChange(of: secili) { yeni in
+            if yeni == 3 {
+                yeniSayisi = 0
+            } else {
+                rozetiGuncelle()
+            }
+        }
+    }
+
+    private func rozetiGuncelle() {
+        yeniSayisi = secili == 3 ? 0 : YenilikTakibi.yeniSayisi(depo.yenilikler)
+    }
+}
 
 /// dashboard.php — Ana sayfa.
 struct AnaEkran: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
+    @Environment(\.colorScheme) private var sema
+    @AppStorage("gorunum") private var gorunum = "otomatik"
     @State private var yeniSayisi = 0
+    @State private var webSayfasi: WebSayfasi?
 
     var body: some View {
-        NavigationView {
-            ScrollView {
-                VStack(spacing: 0) {
-                    Kahraman(baslik: "Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋",
-                             aciklama: "Aradığın mevzuata hızlıca ulaş.")
+        ScrollView {
+            VStack(spacing: 0) {
+                Kahraman(baslik: "Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋",
+                         aciklama: "Aradığın mevzuata hızlıca ulaş.")
 
-                    VStack(alignment: .leading, spacing: 12) {
-                        durumSatiri
+                VStack(alignment: .leading, spacing: 12) {
+                    durumSatiri
 
-                        NavigationLink(destination: AramaEkrani()) {
-                            AnaKart(sembol: "magnifyingglass", baslik: "Mevzuat arama",
-                                    aciklama: "Kanun, yönetmelik, genelge ve diğer düzenlemelerde hızlı arama yap",
-                                    ana: true)
-                        }
-                        NavigationLink(destination: TurlerEkrani()) {
-                            AnaKart(sembol: "fish", baslik: "Tür kartları",
-                                    aciklama: "Asgari av boyu ve yasak dönemleri")
-                        }
-                        NavigationLink(destination: YeniliklerEkrani()) {
-                            AnaKart(sembol: "text.bubble", baslik: "Yenilikler",
-                                    aciklama: "Eklenen mevzuat ve duyurular",
-                                    rozet: yeniSayisi > 0 ? "\(yeniSayisi) yeni" : nil)
-                        }
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Bu uygulama resmî kurum uygulaması değildir. İçerikler mevzuata erişim ve referans amacıyla sunulmaktadır; güncel mevzuat metinleri ve yetkili kaynaklar esas alınmalıdır.")
-                                .font(.caption)
-                                .foregroundColor(Renk.soluk)
-                                .fixedSize(horizontal: false, vertical: true)
-                            if let u = URL(string: "https://sg.barisguresci.com.tr/kvkk.php") {
-                                Link("KVKK aydınlatma metni", destination: u)
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundColor(Renk.mavi)
+                    if oturum.yonetici {
+                        HStack(spacing: 10) {
+                            YoneticiDugmesi(sembol: "bubble.left.and.bubble.right", baslik: "Destek paneli") {
+                                webSayfasi = WebSayfasi(baslik: "Destek paneli", yol: "yanit.php")
+                            }
+                            YoneticiDugmesi(sembol: "gearshape", baslik: "Yönetim paneli") {
+                                webSayfasi = WebSayfasi(baslik: "Yönetim paneli", yol: "admin/")
                             }
                         }
-                        .padding(.top, 10)
                     }
-                    .buttonStyle(.plain)
-                    .padding(16)
-                }
-            }
-            .background(Renk.zemin.ignoresSafeArea())
-            .navigationTitle("Mevzuat Rehberi")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    HStack(spacing: 14) {
-                        if depo.guncelleniyor {
-                            ProgressView().tint(.white)
-                        } else {
-                            Button {
-                                Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
-                            } label: {
-                                Image(systemName: "arrow.clockwise")
-                            }
-                        }
-                        NavigationLink(destination: HesapEkrani()) {
-                            Image(systemName: "person.crop.circle")
+
+                    NavigationLink(destination: AramaEkrani()) {
+                        AnaKart(sembol: "magnifyingglass", baslik: "Mevzuat arama",
+                                aciklama: "Kanun, yönetmelik, genelge ve diğer düzenlemelerde hızlı arama yap",
+                                ana: true)
+                    }
+                    NavigationLink(destination: TurlerEkrani()) {
+                        AnaKart(sembol: "fish", baslik: "Tür kartları",
+                                aciklama: "Asgari av boyu ve yasak dönemleri")
+                    }
+                    NavigationLink(destination: YeniliklerEkrani()) {
+                        AnaKart(sembol: "text.bubble", baslik: "Yenilikler",
+                                aciklama: "Eklenen mevzuat ve duyurular",
+                                rozet: yeniSayisi > 0 ? "\(yeniSayisi) yeni" : nil)
+                    }
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("Bu uygulama resmî kurum uygulaması değildir. İçerikler mevzuata erişim ve referans amacıyla sunulmaktadır; güncel mevzuat metinleri ve yetkili kaynaklar esas alınmalıdır.")
+                            .font(.caption)
+                            .foregroundColor(Renk.soluk)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Button {
+                            webSayfasi = WebSayfasi(baslik: "KVKK aydınlatma metni", yol: "kvkk.php")
+                        } label: {
+                            Text("KVKK aydınlatma metni")
+                                .font(.caption.weight(.semibold))
+                                .foregroundColor(Renk.mavi)
                         }
                     }
+                    .padding(.top, 10)
                 }
+                .buttonStyle(.plain)
+                .padding(16)
             }
-            .onAppear { yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
-            .onChange(of: depo.yenilikler.count) { _ in yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
         }
-        .navigationViewStyle(.stack)
+        .background(Renk.zemin.ignoresSafeArea())
+        .navigationTitle("Mevzuat Rehberi")
+        .markaBasligi()
+        .toolbar {
+            ToolbarItem(placement: .navigationBarTrailing) {
+                HStack(spacing: 16) {
+                    Button {
+                        // Sitedeki ay simgesi: koyudaysa gündüze, açıktaysa geceye geçer.
+                        gorunum = sema == .dark ? "acik" : "koyu"
+                    } label: {
+                        Image(systemName: sema == .dark ? "sun.max" : "moon")
+                            .foregroundColor(.white)
+                    }
+                    if depo.guncelleniyor {
+                        ProgressView().tint(.white)
+                    } else {
+                        Button {
+                            Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                                .foregroundColor(.white)
+                        }
+                    }
+                }
+            }
+        }
+        .sheet(item: $webSayfasi) { s in
+            SafariGorunumu(url: s.url)
+                .ignoresSafeArea()
+        }
+        .onAppear { yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
+        .onChange(of: depo.yenilikler.count) { _ in yeniSayisi = YenilikTakibi.yeniSayisi(depo.yenilikler) }
     }
 
     @ViewBuilder
@@ -155,5 +230,50 @@ struct AnaKart: View {
         .padding(16)
         .kart(vurgulu: ana)
         .shadow(color: ana ? Color.black.opacity(0.06) : .clear, radius: 10, x: 0, y: 4)
+    }
+}
+
+/// Site sayfası (yönetim, destek, KVKK) — uygulama içinde Safari ile açılır.
+struct WebSayfasi: Identifiable {
+    let baslik: String
+    let yol: String
+    var id: String { return yol }
+    var url: URL { return Ayarlar.siteAdresi.appendingPathComponent(yol) }
+}
+
+struct SafariGorunumu: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        let v = SFSafariViewController(url: url)
+        v.preferredControlTintColor = UIColor(onaltilik: 0x0B2E4A)
+        v.dismissButtonStyle = .close
+        return v
+    }
+
+    func updateUIViewController(_ uiViewController: SFSafariViewController, context: Context) {}
+}
+
+struct YoneticiDugmesi: View {
+    let sembol: String
+    let baslik: String
+    let eylem: () -> Void
+
+    var body: some View {
+        Button(action: eylem) {
+            HStack(spacing: 8) {
+                Image(systemName: sembol)
+                Text(baslik)
+                    .font(.footnote.weight(.semibold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 11)
+            .foregroundColor(Renk.lacivert)
+            .background(Renk.tint)
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
     }
 }

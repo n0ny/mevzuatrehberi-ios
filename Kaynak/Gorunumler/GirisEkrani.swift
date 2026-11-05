@@ -1,98 +1,177 @@
 import SwiftUI
 
+/// index.php — Giriş sayfası (arka plan görseli, amblem, cam görünümlü kart).
 struct GirisEkrani: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
 
     @State private var kullanici = ""
     @State private var sifre = ""
+    @State private var sifreGorunsun = false
     @State private var bekliyor = false
     @State private var hata: String?
+    @State private var webSayfasi: WebSayfasi?
 
     private enum Alan { case kullanici, sifre }
     @FocusState private var odak: Alan?
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 22) {
-                VStack(spacing: 10) {
-                    Image(systemName: "book.closed.fill")
-                        .font(.system(size: 46))
-                        .foregroundColor(.white)
-                        .frame(width: 88, height: 88)
-                        .background(Color.accentColor)
-                        .cornerRadius(24)
-                    Text("Mevzuat Rehberi")
-                        .font(.largeTitle.bold())
-                    Text("Hesabınızla giriş yapın")
-                        .foregroundColor(.secondary)
-                }
-                .padding(.top, 50)
+        ZStack {
+            arkaPlan
 
-                VStack(spacing: 12) {
-                    TextField("Kullanıcı adı veya e-posta", text: $kullanici)
-                        .textContentType(.username)
-                        .textInputAutocapitalization(.never)
-                        .disableAutocorrection(true)
-                        .submitLabel(.next)
-                        .focused($odak, equals: .kullanici)
-                        .onSubmit { odak = .sifre }
-                        .padding(14)
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(12)
-
-                    SecureField("Şifre", text: $sifre)
-                        .textContentType(.password)
-                        .submitLabel(.go)
-                        .focused($odak, equals: .sifre)
-                        .onSubmit { girisYap() }
-                        .padding(14)
-                        .background(Color(.secondarySystemBackground))
-                        .cornerRadius(12)
-                }
-
-                if let h = hata {
-                    Text(h)
-                        .font(.callout)
-                        .foregroundColor(.red)
-                        .multilineTextAlignment(.center)
-                }
-
-                Button(action: girisYap) {
-                    HStack {
-                        if bekliyor {
-                            ProgressView().tint(.white)
-                        }
-                        Text(bekliyor ? "Giriş yapılıyor…" : "Giriş yap")
-                            .fontWeight(.semibold)
+            ScrollView {
+                VStack(spacing: 22) {
+                    VStack(spacing: 8) {
+                        Image("Amblem")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 150, height: 150)
+                            .shadow(color: Color.black.opacity(0.4), radius: 16, x: 0, y: 8)
+                        (Text("MEVZUAT ") + Text("REHBERİ").foregroundColor(Color(UIColor(onaltilik: 0x7FC4FF))))
+                            .font(.system(size: 30, weight: .heavy, design: .serif))
+                            .foregroundColor(.white)
+                        Text("Mevzuata Hızlı Erişim ve Bilgi Platformu")
+                            .font(.footnote)
+                            .foregroundColor(.white.opacity(0.8))
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(15)
-                    .foregroundColor(.white)
-                    .background(girisYapilabilir ? Color.accentColor : Color.gray)
-                    .cornerRadius(12)
-                }
-                .disabled(!girisYapilabilir || bekliyor)
+                    .padding(.top, 44)
 
-                VStack(spacing: 6) {
-                    Text("Hesap oluşturma ve şifre yenileme işlemleri sitemizden yapılır.")
+                    VStack(spacing: 14) {
+                        if let h = hata {
+                            Text(h)
+                                .font(.callout)
+                                .foregroundColor(.white)
+                                .multilineTextAlignment(.center)
+                                .padding(12)
+                                .frame(maxWidth: .infinity)
+                                .background(Color(UIColor(onaltilik: 0xB42335)).opacity(0.85))
+                                .cornerRadius(12)
+                        }
+
+                        alan(simge: "person") {
+                            TextField("", text: $kullanici, prompt: Text("Kullanıcı Adı").foregroundColor(.white.opacity(0.6)))
+                                .textContentType(.username)
+                                .textInputAutocapitalization(.never)
+                                .disableAutocorrection(true)
+                                .submitLabel(.next)
+                                .focused($odak, equals: .kullanici)
+                                .onSubmit { odak = .sifre }
+                        }
+
+                        alan(simge: "lock") {
+                            HStack {
+                                Group {
+                                    if sifreGorunsun {
+                                        TextField("", text: $sifre, prompt: Text("Şifre").foregroundColor(.white.opacity(0.6)))
+                                            .textInputAutocapitalization(.never)
+                                            .disableAutocorrection(true)
+                                    } else {
+                                        SecureField("", text: $sifre, prompt: Text("Şifre").foregroundColor(.white.opacity(0.6)))
+                                    }
+                                }
+                                .textContentType(.password)
+                                .submitLabel(.go)
+                                .focused($odak, equals: .sifre)
+                                .onSubmit { girisYap() }
+                                Button {
+                                    sifreGorunsun.toggle()
+                                } label: {
+                                    Image(systemName: sifreGorunsun ? "eye.slash" : "eye")
+                                        .foregroundColor(.white.opacity(0.75))
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        }
+
+                        HStack {
+                            Spacer()
+                            Button("Şifremi unuttum?") {
+                                webSayfasi = WebSayfasi(baslik: "Şifremi unuttum", yol: "forgot_password.php")
+                            }
+                            .font(.footnote.weight(.semibold))
+                            .foregroundColor(.white.opacity(0.9))
+                        }
+
+                        Button(action: girisYap) {
+                            HStack {
+                                if bekliyor {
+                                    ProgressView().tint(.white)
+                                }
+                                Text(bekliyor ? "Giriş yapılıyor…" : "Giriş Yap")
+                                    .fontWeight(.bold)
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(15)
+                            .foregroundColor(.white)
+                            .background(
+                                LinearGradient(gradient: Gradient(colors: [Color(UIColor(onaltilik: 0x1E88E5)),
+                                                                           Color(UIColor(onaltilik: 0x0B5CAD))]),
+                                               startPoint: .leading, endPoint: .trailing)
+                                    .opacity(girisYapilabilir ? 1 : 0.5)
+                            )
+                            .cornerRadius(14)
+                        }
+                        .disabled(!girisYapilabilir || bekliyor)
+
+                        HStack(spacing: 4) {
+                            Text("Hesabın yok mu?")
+                                .foregroundColor(.white.opacity(0.8))
+                            Button("Kayıt ol") {
+                                webSayfasi = WebSayfasi(baslik: "Kayıt ol", yol: "register.php")
+                            }
+                            .foregroundColor(.white)
+                            .font(.footnote.weight(.bold))
+                        }
                         .font(.footnote)
-                        .foregroundColor(.secondary)
-                        .multilineTextAlignment(.center)
-                    Link("sg.barisguresci.com.tr", destination: Ayarlar.siteAdresi)
-                        .font(.footnote.weight(.semibold))
-                }
-                .padding(.top, 6)
+                    }
+                    .padding(20)
+                    .background(.ultraThinMaterial)
+                    .environment(\.colorScheme, .dark)
+                    .cornerRadius(22)
+                    .overlay(RoundedRectangle(cornerRadius: 22).stroke(Color.white.opacity(0.18), lineWidth: 1))
 
-                Text(Notlar.resmiDegil)
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.top, 10)
+                    Text(Notlar.resmiDegil)
+                        .font(.caption2)
+                        .foregroundColor(.white.opacity(0.65))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 22)
+                .padding(.bottom, 30)
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 30)
         }
+        .sheet(item: $webSayfasi) { s in
+            SafariGorunumu(url: s.url).ignoresSafeArea()
+        }
+    }
+
+    private var arkaPlan: some View {
+        GeometryReader { g in
+            ZStack {
+                Image("GirisArkaplan")
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: g.size.width, height: g.size.height)
+                    .clipped()
+                LinearGradient(gradient: Gradient(colors: [Color(red: 2 / 255, green: 20 / 255, blue: 38 / 255).opacity(0.35),
+                                                           Color(red: 2 / 255, green: 13 / 255, blue: 25 / 255).opacity(0.78)]),
+                               startPoint: .top, endPoint: .bottom)
+            }
+        }
+        .ignoresSafeArea()
+    }
+
+    private func alan<Icerik: View>(simge: String, @ViewBuilder icerik: () -> Icerik) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: simge)
+                .foregroundColor(.white.opacity(0.8))
+                .frame(width: 22)
+            icerik()
+                .foregroundColor(.white)
+        }
+        .padding(14)
+        .background(Color.white.opacity(0.10))
+        .cornerRadius(14)
+        .overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.white.opacity(0.22), lineWidth: 1))
     }
 
     private var girisYapilabilir: Bool {
@@ -110,6 +189,7 @@ struct GirisEkrani: View {
             do {
                 try await oturum.girisYap(kullanici: k, sifre: s)
                 sifre = ""
+                _ = await oturum.kontrolEt()
                 if let t = oturum.token {
                     _ = await depo.guncelle(token: t)
                 }

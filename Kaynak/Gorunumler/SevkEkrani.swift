@@ -56,7 +56,7 @@ struct SevkEkrani: View {
         }
         .background(Renk.zemin.ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
-        .navigationBarTitleDisplayMode(.inline)
+        .markaBasligi()
     }
 
     private var guvenlikUyarisi: some View {

@@ -191,7 +191,7 @@ struct YeniliklerEkrani: View {
         }
         .background(Renk.zemin.ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
-        .navigationBarTitleDisplayMode(.inline)
+        .markaBasligi()
         .onAppear {
             if !hazir {
                 // Önce eski "son görme" alınır (yeni işaretleri buna göre), sonra şimdiye çekilir.

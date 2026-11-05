@@ -52,6 +52,53 @@ enum Renk {
         cubuk.compactAppearance = gorunum
         cubuk.tintColor = .white
     }
+
+    /// Alttaki sekme çubuğu: kart rengi zemin, seçili sekme lacivert (gecede açık mavi).
+    static func sekmeCubugunuAyarla() {
+        let gorunum = UITabBarAppearance()
+        gorunum.configureWithOpaqueBackground()
+        gorunum.backgroundColor = UIColor.dinamik(0xFFFFFF, 0x0F1B27)
+        let secili = UIColor.dinamik(0x0B2E4A, 0x7FB4EA)
+        let normal = UIColor.dinamik(0x8A99A8, 0x6F8396)
+        for duzen in [gorunum.stackedLayoutAppearance, gorunum.inlineLayoutAppearance, gorunum.compactInlineLayoutAppearance] {
+            duzen.selected.iconColor = secili
+            duzen.selected.titleTextAttributes = [.foregroundColor: secili]
+            duzen.normal.iconColor = normal
+            duzen.normal.titleTextAttributes = [.foregroundColor: normal]
+        }
+        let cubuk = UITabBar.appearance()
+        cubuk.standardAppearance = gorunum
+        if #available(iOS 15.0, *) {
+            cubuk.scrollEdgeAppearance = gorunum
+        }
+    }
+}
+
+/// Üst çubukta amblem + "Mevzuat Rehberi" (sitedeki .brand).
+struct MarkaBasligi: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    HStack(spacing: 8) {
+                        Image("Amblem")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 28, height: 28)
+                        Text("Mevzuat Rehberi")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                    }
+                }
+            }
+    }
+}
+
+extension View {
+    func markaBasligi() -> some View {
+        modifier(MarkaBasligi())
+    }
 }
 
 /// Sitedeki "hero": lacivert geçişli üst alan, büyük başlık ve açıklama.

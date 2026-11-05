@@ -109,7 +109,7 @@ struct BolgeEkrani: View {
         }
         .background(Renk.zemin.ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
-        .navigationBarTitleDisplayMode(.inline)
+        .markaBasligi()
     }
 
     private func filtreler(iller: [String], ilceler: [String]) -> some View {

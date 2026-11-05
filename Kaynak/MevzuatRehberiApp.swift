@@ -11,6 +11,7 @@ struct MevzuatRehberiApp: App {
                                    diskCapacity: 300 * 1024 * 1024,
                                    directory: nil)
         Renk.gezinmeCubugunuAyarla()
+        Renk.sekmeCubugunuAyarla()
     }
 
     var body: some Scene {
@@ -26,6 +27,8 @@ struct KokGorunum: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
     @Environment(\.scenePhase) private var faz
+    /// Hesabım > Görünüm: otomatik / acik (gündüz) / koyu (gece). Bu cihazda hatırlanır.
+    @AppStorage("gorunum") private var gorunum = "otomatik"
 
     var body: some View {
         Group {
@@ -33,9 +36,10 @@ struct KokGorunum: View {
             case .girisGerekli:
                 GirisEkrani()
             case .acik:
-                AnaEkran()
+                AnaSekmeler()
             }
         }
+        .preferredColorScheme(gorunum == "acik" ? .light : (gorunum == "koyu" ? .dark : nil))
         .task {
             await depo.diskOku()
             await baslangicKontrolu()

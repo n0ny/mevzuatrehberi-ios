@@ -66,7 +66,7 @@ struct TurlerEkrani: View {
         }
         .background(Renk.zemin.ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
-        .navigationBarTitleDisplayMode(.inline)
+        .markaBasligi()
         .fullScreenCover(item: $buyuk) { t in
             BuyukFoto(url: t.fotoURL, ad: t.ad, kredi: t.fotoKredi)
         }

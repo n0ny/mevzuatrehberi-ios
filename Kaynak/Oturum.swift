@@ -9,6 +9,7 @@ final class Oturum: ObservableObject {
     }
 
     @Published private(set) var durum: Durum
+    @Published private(set) var hesap: HesapBilgisi?
     private(set) var token: String?
 
     private static let kullaniciAnahtari = "oturum.kullanici"
@@ -40,9 +41,10 @@ final class Oturum: ObservableObject {
     func kontrolEt() async -> Bool {
         guard let t = token else { return false }
         do {
-            let k = try await APIIstemci.ben(token: t)
-            Oturum.kullaniciKaydet(k)
-            durum = .acik(k)
+            let sonuc = try await APIIstemci.ben(token: t)
+            Oturum.kullaniciKaydet(sonuc.kullanici)
+            durum = .acik(sonuc.kullanici)
+            hesap = sonuc.hesap
             return true
         } catch APIHatasi.yetkisiz(_) {
             return false
@@ -51,10 +53,21 @@ final class Oturum: ObservableObject {
         }
     }
 
+    /// Şifre değişince sunucu yeni giriş anahtarı verir.
+    func tokenGuncelle(_ yeni: String) {
+        AnahtarZinciri.yaz(yeni)
+        token = yeni
+    }
+
+    var yonetici: Bool {
+        return kullanici?.rol == "admin"
+    }
+
     func cikisYap() {
         AnahtarZinciri.sil()
         UserDefaults.standard.removeObject(forKey: Oturum.kullaniciAnahtari)
         token = nil
+        hesap = nil
         durum = .girisGerekli
     }
 

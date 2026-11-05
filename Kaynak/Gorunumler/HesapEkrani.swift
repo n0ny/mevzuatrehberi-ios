@@ -1,9 +1,24 @@
 import SwiftUI
+import UIKit
 
+/// hesabim.php — Hesabım sayfasının karşılığı.
 struct HesapEkrani: View {
     @EnvironmentObject var oturum: Oturum
     @EnvironmentObject var depo: VeriDeposu
+    @AppStorage("gorunum") private var gorunum = "otomatik"
+
+    @State private var adSoyad = ""
+    @State private var mevcutSifre = ""
+    @State private var yeniSifre = ""
+    @State private var yeniSifreTekrar = ""
+    @State private var sifreAcik = false
+    @State private var mesaj: String?
+    @State private var hata: String?
+    @State private var bekliyor = false
+    @State private var silmeSorusu = false
+    @State private var iptalSorusu = false
     @State private var cikisSorusu = false
+    @State private var webSayfasi: WebSayfasi?
 
     private var surum: String {
         let s = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "?"
@@ -12,69 +27,70 @@ struct HesapEkrani: View {
     }
 
     var body: some View {
-        List {
-            Section(header: Text("Hesap")) {
-                BilgiSatiri(baslik: "Ad", deger: oturum.kullanici?.ad)
-                BilgiSatiri(baslik: "Kullanıcı adı", deger: oturum.kullanici?.kullaniciAdi)
-            }
+        let k = oturum.kullanici
+        let hesap = oturum.hesap
+        let yonetici = oturum.yonetici
+        let silmeBekliyor = !yonetici && (hesap?.silmeTalebi ?? false)
 
-            Section(header: Text("İçerik"),
-                    footer: Text("İçerik telefona kaydedilir; internet yokken son indirilen veriler gösterilir. Uygulama açıldığında güncellemeler kendiliğinden kontrol edilir.")) {
-                HStack {
-                    Text("Son kontrol")
-                    Spacer()
-                    Text(depo.sonKontrol.map { Tarih.anYaz($0) } ?? "Yapılmadı")
-                        .foregroundColor(.secondary)
-                }
-                sayiSatiri("Mevzuat maddesi", depo.maddeler.count)
-                sayiSatiri("Fiil", depo.fiiller.count)
-                sayiSatiri("Sevk kaydı", depo.sevkler.count)
-                sayiSatiri("İdari yaptırım", depo.yaptirimlar.count)
-                sayiSatiri("Tür kartı", depo.turler.count)
-                sayiSatiri("Bölge yasağı", depo.bolgeler.count)
-                if let h = depo.hataMesaji {
-                    Text(h)
-                        .font(.footnote)
-                        .foregroundColor(.red)
-                }
-                Button {
-                    Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
-                } label: {
-                    HStack {
-                        Text(depo.guncelleniyor ? "Güncelleniyor…" : "Şimdi güncelle")
-                        Spacer()
-                        if depo.guncelleniyor {
-                            ProgressView()
+        return ScrollView {
+            VStack(spacing: 0) {
+                ust(k: k, hesap: hesap, yonetici: yonetici)
+
+                VStack(alignment: .leading, spacing: 14) {
+                    if let m = mesaj {
+                        Bildirim(metin: m, hata: false)
+                    }
+                    if let h = hata {
+                        Bildirim(metin: h, hata: true)
+                    }
+
+                    if silmeBekliyor {
+                        silmeBekliyorKarti(kalan: hesap?.silmeKalan)
+                    }
+
+                    if yonetici {
+                        HStack(spacing: 10) {
+                            YoneticiDugmesi(sembol: "bubble.left.and.bubble.right", baslik: "Destek paneli") {
+                                webSayfasi = WebSayfasi(baslik: "Destek paneli", yol: "yanit.php")
+                            }
+                            YoneticiDugmesi(sembol: "gearshape", baslik: "Yönetim paneli") {
+                                webSayfasi = WebSayfasi(baslik: "Yönetim paneli", yol: "admin/")
+                            }
                         }
                     }
-                }
-                .disabled(depo.guncelleniyor)
-            }
 
-            Section {
-                Button(role: .destructive) {
-                    cikisSorusu = true
-                } label: {
-                    Text("Çıkış yap")
+                    hesapBilgileri(k: k)
+                    gorunumKarti
+                    sifreKarti
+                    if !yonetici && !silmeBekliyor {
+                        silmeKarti
+                    }
+                    icerikKarti
+                    cikisKarti
                 }
-            }
-
-            Section(header: Text("Hakkında")) {
-                Text(Notlar.resmiDegil)
-                    .font(.footnote)
-                Text(Notlar.resmiMetin)
-                    .font(.footnote)
-                Link("sg.barisguresci.com.tr", destination: Ayarlar.siteAdresi)
-                HStack {
-                    Text("Sürüm")
-                    Spacer()
-                    Text(surum).foregroundColor(.secondary)
-                }
+                .padding(16)
             }
         }
-        .listStyle(.insetGrouped)
+        .background(Renk.zemin.ignoresSafeArea())
         .navigationTitle("Hesabım")
-        .navigationBarTitleDisplayMode(.inline)
+        .markaBasligi()
+        .onAppear {
+            if adSoyad.isEmpty { adSoyad = k?.ad ?? "" }
+            Task { _ = await oturum.kontrolEt() }
+        }
+        .sheet(item: $webSayfasi) { s in
+            SafariGorunumu(url: s.url).ignoresSafeArea()
+        }
+        .alert("Hesabınızı silmek istediğinize emin misiniz?", isPresented: $silmeSorusu) {
+            Button("Hesabımı sil", role: .destructive) { islem("silme-talebi") }
+            Button("Vazgeç", role: .cancel) {}
+        } message: {
+            Text("Talebiniz alınacak ve hesabınız 24 saat içinde kalıcı olarak silinecektir. Bu işlem geri alınamaz.")
+        }
+        .alert("Hesap silme talebinizi iptal etmek istediğinize emin misiniz?", isPresented: $iptalSorusu) {
+            Button("Talebi iptal et") { islem("silme-iptal") }
+            Button("Vazgeç", role: .cancel) {}
+        }
         .alert("Çıkış yapılsın mı?", isPresented: $cikisSorusu) {
             Button("Çıkış yap", role: .destructive) {
                 Eylemler.cikis(oturum: oturum, depo: depo)
@@ -85,11 +101,375 @@ struct HesapEkrani: View {
         }
     }
 
-    private func sayiSatiri(_ baslik: String, _ sayi: Int) -> some View {
-        HStack {
-            Text(baslik)
-            Spacer()
-            Text("\(sayi)").foregroundColor(.secondary)
+    // MARK: Üst alan
+
+    private func ust(k: KullaniciOzet?, hesap: HesapBilgisi?, yonetici: Bool) -> some View {
+        let ilk = String((k?.kullaniciAdi ?? "?").prefix(1)).uppercased(with: TRMetin.tr)
+        let aktif = hesap?.aktif ?? true
+        return Kahraman(baslik: k?.ad ?? "") {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("@" + (k?.kullaniciAdi ?? ""))
+                    .font(.subheadline)
+                    .foregroundColor(.white.opacity(0.8))
+                HStack(spacing: 8) {
+                    Text(yonetici ? "Yönetici" : "Personel")
+                    Circle().fill(aktif ? Color.green : Color.gray).frame(width: 7, height: 7)
+                    Text(aktif ? "Aktif" : "Pasif")
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundColor(.white)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 5)
+                .background(Color.white.opacity(0.14))
+                .cornerRadius(999)
+                Text(hesap?.sonGiris.map { "Son giriş: " + $0 } ?? "Henüz giriş yapılmadı")
+                    .font(.caption)
+                    .foregroundColor(.white.opacity(0.75))
+            }
         }
+        .overlay(
+            Text(ilk)
+                .font(.system(size: 26, weight: .bold))
+                .foregroundColor(Renk.lacivert)
+                .frame(width: 58, height: 58)
+                .background(Color.white)
+                .clipShape(Circle())
+                .padding(18),
+            alignment: .topTrailing)
+    }
+
+    // MARK: Kartlar
+
+    private func silmeBekliyorKarti(kalan: String?) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("Hesap silme talebiniz alındı", systemImage: "clock")
+                .font(.subheadline.weight(.bold))
+                .foregroundColor(Renk.kirmizi)
+            (Text("Hesabınız ") + Text("24 saat içinde").bold()
+                + Text(" kalıcı olarak silinecektir. Bu süre içerisinde hesabınızı kullanmaya devam edebilirsiniz."))
+                .font(.footnote)
+                .foregroundColor(Renk.murekkep)
+                .fixedSize(horizontal: false, vertical: true)
+            if let k = kalan {
+                Text("Kalan süre: \(k)")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundColor(Renk.kirmizi)
+            }
+            Button("Hesap silme talebini iptal et") { iptalSorusu = true }
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Renk.mavi)
+                .disabled(bekliyor)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Renk.kirmiziZemin)
+        .cornerRadius(16)
+    }
+
+    private func hesapBilgileri(k: KullaniciOzet?) -> some View {
+        KartBolumu(sembol: "person", baslik: "Hesap bilgileri", aciklama: "Görünen kullanıcı bilgilerinizi güncelleyin.") {
+            Giris(etiket: "Kullanıcı adı") {
+                Text(k?.kullaniciAdi ?? "")
+                    .foregroundColor(Renk.soluk)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            Giris(etiket: "Ad soyad") {
+                TextField("Ad Soyad", text: $adSoyad)
+                    .textContentType(.name)
+                    .foregroundColor(Renk.murekkep)
+            }
+            AnaDugme(baslik: "Bilgilerimi güncelle", bekliyor: bekliyor) {
+                islem("profil", ["full_name": adSoyad])
+            }
+        }
+    }
+
+    private var gorunumKarti: some View {
+        KartBolumu(sembol: "moon", baslik: "Görünüm", aciklama: "Uygulamanın açık veya koyu renkte görünmesini seçin.") {
+            HStack(spacing: 8) {
+                GorunumSecenegi(baslik: "Otomatik", sembol: "circle.lefthalf.filled", secili: gorunum == "otomatik") { gorunum = "otomatik" }
+                GorunumSecenegi(baslik: "Gündüz", sembol: "sun.max", secili: gorunum == "acik") { gorunum = "acik" }
+                GorunumSecenegi(baslik: "Gece", sembol: "moon", secili: gorunum == "koyu") { gorunum = "koyu" }
+            }
+            Text("Otomatik seçildiğinde telefonunuzun açık/koyu ayarı kullanılır. Seçiminiz bu cihazda hatırlanır.")
+                .font(.caption)
+                .foregroundColor(Renk.soluk)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var sifreKarti: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) { sifreAcik.toggle() }
+            } label: {
+                HStack(spacing: 12) {
+                    KartSimgesi(sembol: "key")
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Şifreyi değiştir").font(.headline).foregroundColor(Renk.murekkep)
+                        Text("Hesap güvenliğiniz için düzenli güncelleyin.").font(.caption).foregroundColor(Renk.soluk)
+                    }
+                    Spacer()
+                    Image(systemName: "chevron.down")
+                        .rotationEffect(.degrees(sifreAcik ? 180 : 0))
+                        .foregroundColor(Renk.soluk)
+                }
+            }
+            .buttonStyle(.plain)
+            if sifreAcik {
+                SifreAlani(etiket: "Mevcut şifre", ipucu: "Mevcut şifreniz", metin: $mevcutSifre, yeni: false)
+                SifreAlani(etiket: "Yeni şifre", ipucu: "Yeni şifreniz", metin: $yeniSifre, yeni: true)
+                Text("En az 8 karakter olmalı; en az bir harf ve bir rakam içermeli.")
+                    .font(.caption)
+                    .foregroundColor(Renk.soluk)
+                SifreAlani(etiket: "Yeni şifre tekrar", ipucu: "Yeni şifrenizi tekrar girin", metin: $yeniSifreTekrar, yeni: true)
+                AnaDugme(baslik: "Şifremi değiştir", bekliyor: bekliyor) {
+                    islem("sifre", ["mevcut": mevcutSifre, "yeni": yeniSifre, "yeni_tekrar": yeniSifreTekrar])
+                }
+            }
+        }
+        .padding(16)
+        .kart()
+    }
+
+    private var silmeKarti: some View {
+        KartBolumu(sembol: "trash", baslik: "Hesabı sil", aciklama: "Hesabınızı kalıcı olarak silmek için talep oluşturabilirsiniz.", tehlike: true) {
+            Button {
+                silmeSorusu = true
+            } label: {
+                Text("Hesabımı silmek istiyorum")
+                    .font(.subheadline.weight(.semibold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .foregroundColor(.white)
+                    .background(Renk.kirmizi)
+                    .cornerRadius(12)
+            }
+            .buttonStyle(.plain)
+            .disabled(bekliyor)
+        }
+    }
+
+    private var icerikKarti: some View {
+        KartBolumu(sembol: "arrow.down.circle", baslik: "Telefondaki içerik",
+                   aciklama: "İçerik telefona kaydedilir; internet yokken son indirilen veriler gösterilir.") {
+            HStack {
+                Text("Son kontrol").foregroundColor(Renk.murekkep)
+                Spacer()
+                Text(depo.sonKontrol.map { Tarih.anYaz($0) } ?? "Yapılmadı").foregroundColor(Renk.soluk)
+            }
+            .font(.footnote)
+            if let h = depo.hataMesaji {
+                Text(h).font(.footnote).foregroundColor(Renk.kirmizi)
+            }
+            AnaDugme(baslik: depo.guncelleniyor ? "Güncelleniyor…" : "Şimdi güncelle", bekliyor: depo.guncelleniyor) {
+                Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
+            }
+        }
+    }
+
+    private var cikisKarti: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Button {
+                cikisSorusu = true
+            } label: {
+                Label("Çıkış yap", systemImage: "rectangle.portrait.and.arrow.right")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(Renk.kirmizi)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .kart()
+            }
+            .buttonStyle(.plain)
+            Text(Notlar.resmiDegil)
+                .font(.caption)
+                .foregroundColor(Renk.soluk)
+            Text("Sürüm \(surum)")
+                .font(.caption2)
+                .foregroundColor(Renk.soluk)
+        }
+    }
+
+    // MARK: İşlemler
+
+    private func islem(_ ad: String, _ alanlar: [String: String] = [:]) {
+        guard let t = oturum.token, !bekliyor else { return }
+        mesaj = nil
+        hata = nil
+        bekliyor = true
+        Task {
+            do {
+                let c = try await APIIstemci.hesap(islem: ad, alanlar: alanlar, token: t)
+                if let yeni = c.token {
+                    oturum.tokenGuncelle(yeni)
+                }
+                mesaj = c.mesaj
+                if ad == "sifre" {
+                    mevcutSifre = ""
+                    yeniSifre = ""
+                    yeniSifreTekrar = ""
+                    sifreAcik = false
+                }
+                _ = await oturum.kontrolEt()
+            } catch APIHatasi.yetkisiz(_) {
+                Eylemler.cikis(oturum: oturum, depo: depo)
+            } catch let e as APIHatasi {
+                hata = e.aciklama
+            } catch {
+                hata = APIHatasi.baglanti.aciklama
+            }
+            bekliyor = false
+        }
+    }
+}
+
+// MARK: - Yardımcı görünümler
+
+struct Bildirim: View {
+    let metin: String
+    let hata: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: hata ? "exclamationmark.circle" : "checkmark.circle")
+            Text(metin).fixedSize(horizontal: false, vertical: true)
+        }
+        .font(.footnote.weight(.semibold))
+        .foregroundColor(hata ? Renk.kirmizi : Renk.yesil)
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(hata ? Renk.kirmiziZemin : Renk.yesilZemin)
+        .cornerRadius(12)
+    }
+}
+
+struct KartSimgesi: View {
+    let sembol: String
+    var tehlike = false
+
+    var body: some View {
+        Image(systemName: sembol)
+            .font(.system(size: 16, weight: .semibold))
+            .foregroundColor(tehlike ? Renk.kirmizi : Renk.mavi)
+            .frame(width: 38, height: 38)
+            .background(tehlike ? Renk.kirmiziZemin : Renk.tint)
+            .cornerRadius(11)
+    }
+}
+
+struct KartBolumu<Icerik: View>: View {
+    let sembol: String
+    let baslik: String
+    let aciklama: String
+    var tehlike = false
+    @ViewBuilder let icerik: () -> Icerik
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 12) {
+                KartSimgesi(sembol: sembol, tehlike: tehlike)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(baslik).font(.headline).foregroundColor(tehlike ? Renk.kirmizi : Renk.murekkep)
+                    Text(aciklama).font(.caption).foregroundColor(Renk.soluk).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+            icerik()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .kart()
+    }
+}
+
+struct Giris<Icerik: View>: View {
+    let etiket: String
+    @ViewBuilder let icerik: () -> Icerik
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 5) {
+            Text(etiket).font(.caption.weight(.semibold)).foregroundColor(Renk.soluk)
+            icerik()
+                .padding(12)
+                .background(Renk.ikincil)
+                .cornerRadius(10)
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(Renk.cizgi, lineWidth: 1))
+        }
+    }
+}
+
+struct SifreAlani: View {
+    let etiket: String
+    let ipucu: String
+    @Binding var metin: String
+    let yeni: Bool
+    @State private var gorunsun = false
+
+    var body: some View {
+        Giris(etiket: etiket) {
+            HStack {
+                Group {
+                    if gorunsun {
+                        TextField(ipucu, text: $metin)
+                            .textInputAutocapitalization(.never)
+                            .disableAutocorrection(true)
+                    } else {
+                        SecureField(ipucu, text: $metin)
+                    }
+                }
+                .textContentType(yeni ? UITextContentType.newPassword : UITextContentType.password)
+                .foregroundColor(Renk.murekkep)
+                Button {
+                    gorunsun.toggle()
+                } label: {
+                    Image(systemName: gorunsun ? "eye.slash" : "eye").foregroundColor(Renk.soluk)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+struct AnaDugme: View {
+    let baslik: String
+    let bekliyor: Bool
+    let eylem: () -> Void
+
+    var body: some View {
+        Button(action: eylem) {
+            HStack {
+                if bekliyor { ProgressView().tint(.white) }
+                Text(baslik).fontWeight(.semibold)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .foregroundColor(.white)
+            .background(Renk.lacivert)
+            .cornerRadius(12)
+        }
+        .buttonStyle(.plain)
+        .disabled(bekliyor)
+    }
+}
+
+struct GorunumSecenegi: View {
+    let baslik: String
+    let sembol: String
+    let secili: Bool
+    let eylem: () -> Void
+
+    var body: some View {
+        Button(action: eylem) {
+            VStack(spacing: 6) {
+                Image(systemName: sembol).font(.system(size: 18))
+                Text(baslik).font(.footnote.weight(.semibold))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 12)
+            .foregroundColor(secili ? .white : Renk.murekkep)
+            .background(secili ? Renk.lacivert : Renk.ikincil)
+            .cornerRadius(12)
+            .overlay(RoundedRectangle(cornerRadius: 12).stroke(secili ? Color.clear : Renk.cizgi, lineWidth: 1))
+        }
+        .buttonStyle(.plain)
     }
 }
