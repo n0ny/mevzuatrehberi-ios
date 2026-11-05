@@ -181,7 +181,7 @@ struct BilgiEkrani: View {
                 .frame(maxWidth: .infinity)
                 .kart()
         } else if v.ozet.tamamlandi && !arsiv, let set = v.set {
-            SonucKarti(veri: v, set: set)
+            BilgiSonucKarti(veri: v, set: set)
             AcilirBolum(sembol: "list.bullet.rectangle", baslik: "Cevapları ve açıklamaları incele") {
                 ForEach(v.sorular) { q in
                     SoruKarti(soru: q, toplam: v.ozet.toplam, puan: v.soruPuani, setAcik: set.acik, arsiv: arsiv) { s in
@@ -551,7 +551,7 @@ struct SoruKarti: View {
 }
 
 /// Set tamamlanınca gösterilen sonuç kartı (bilgi.php "score-card").
-struct SonucKarti: View {
+struct BilgiSonucKarti: View {
     let veri: BilgiVerisi
     let set: BilgiVerisi.BilgiSeti
 
