@@ -99,8 +99,6 @@ struct YonetimEkrani: View {
     @State private var acikKullanici: Int?
 
     @State private var soru: Soru?
-    @State private var icSayfa: IcWebSayfasi?
-    @State private var panelHatasi: String?
 
     struct Soru: Identifiable {
         let id = UUID()
@@ -173,9 +171,6 @@ struct YonetimEkrani: View {
                     : .default(Text(s.dugme)) { Task { await islemYap(s.islem, s.alanlar) } },
                   secondaryButton: .cancel(Text("Vazgeç")))
         }
-        .fullScreenCover(item: $icSayfa) { s in
-            IcWebEkrani(sayfa: s)
-        }
     }
 
     private func ozetCipi(_ deger: String, _ etiket: String, uyari: Bool) -> some View {
@@ -188,7 +183,7 @@ struct YonetimEkrani: View {
             .cornerRadius(999)
     }
 
-    // MARK: İçerik yönetimi (2. parçaya kadar sitedeki sayfalar uygulama içinde açılır)
+    // MARK: İçerik yönetimi
 
     private var icerikYonetimi: some View {
         VStack(alignment: .leading, spacing: 10) {
@@ -202,30 +197,17 @@ struct YonetimEkrani: View {
                 icerikEtiketi("questionmark.circle", "Haftanın soruları", "Soru setleri, kim ne cevapladı, sıralama")
             }
             .buttonStyle(.plain)
-            icerikSatiri("text.bubble", "Yenilikler", "Eklenen mevzuatı duyur, bildirim gönder", "admin-yenilikler")
+            NavigationLink(destination: YenilikYonetimiEkrani()) {
+                icerikEtiketi("text.bubble", "Yenilikler", "Eklenen mevzuatı duyur, bildirim gönder")
+            }
+            .buttonStyle(.plain)
             NavigationLink(destination: TurYonetimiEkrani()) {
                 icerikEtiketi("fish", "Tür kartları", "Fotoğraf, asgari boy ve yasak dönemi gir")
             }
             .buttonStyle(.plain)
-            if let h = panelHatasi {
-                UyariKutusu(tur: .dikkat, baslik: "Sayfa açılamadı.", metin: h)
-            }
         }
         .padding(16)
         .kart()
-    }
-
-    private func icerikSatiri(_ sembol: String, _ baslik: String, _ aciklama: String, _ hedef: String) -> some View {
-        Button {
-            panelHatasi = nil
-            PanelGecisi.ac(hedef, baslik: baslik, oturum: oturum) { s, h in
-                icSayfa = s
-                panelHatasi = h
-            }
-        } label: {
-            icerikEtiketi(sembol, baslik, aciklama)
-        }
-        .buttonStyle(.plain)
     }
 
     private func icerikEtiketi(_ sembol: String, _ baslik: String, _ aciklama: String) -> some View {

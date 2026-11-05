@@ -332,4 +332,21 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(TurYonetimKurallari.ara(v.turler, "engraulis").map { $0.id }, [7])
         XCTAssertEqual(TurYonetimKurallari.ara(v.turler, "yumusakca").map { $0.id }, [55])
     }
+
+    /// Yönetim > Yenilikler: liste çözümü.
+    func testYenilikYonetimiCozumleme() throws {
+        let j = try satir(#"""
+        {"ok": true, "bugun": "2026-11-06", "kategoriler": ["Mevzuat", "Yeni özellik", "Düzeltme", "Duyuru"],
+         "kayitlar": [{"id": 10, "baslik": "B", "aciklama": "- a", "kategori": "Duyuru", "tarih": "2026-11-01",
+                       "tarih_yazi": "1 Kasım 2026", "link": "oneri.php", "aktif": true, "durum": "Yayında",
+                       "durum_turu": "yayinda", "bildirim": null}]}
+        """#)
+        let c = JSONDecoder()
+        c.keyDecodingStrategy = .convertFromSnakeCase
+        let v = try c.decode(YenilikYonetimVerisi.self, from: JSONEncoder().encode(j))
+        XCTAssertEqual(v.kategoriler.count, 4)
+        XCTAssertEqual(v.kayitlar[0].tarihYazi, "1 Kasım 2026")
+        XCTAssertEqual(v.kayitlar[0].durumTuru, "yayinda")
+        XCTAssertNil(v.kayitlar[0].bildirim)
+    }
 }

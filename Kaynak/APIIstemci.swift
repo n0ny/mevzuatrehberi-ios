@@ -380,6 +380,23 @@ enum APIIstemci {
                              aranan: j["aranan"]?.metin ?? "")
     }
 
+    // MARK: Yenilikler yönetimi (yalnızca yönetici) — api/yonetim-yenilikler.php
+
+    static func yenilikYonetimi(token: String) async throws -> YenilikYonetimVerisi {
+        let j = try await gonder(tokenliIstek("yonetim-yenilikler.php", token: token))
+        return try snakeCoz(j, YenilikYonetimVerisi.self)
+    }
+
+    /// kaydet / gorunurluk / sil (admin/yenilikler.php ile aynı)
+    static func yenilikIslem(_ islem: String, alanlar: [String: String], token: String) async throws -> String {
+        var govde = alanlar
+        govde["islem"] = islem
+        var istek = tokenliIstek("yonetim-yenilikler.php", token: token, govde: govde)
+        istek.timeoutInterval = 90
+        let j = try await gonder(istek)
+        return j["mesaj"]?.metin ?? "İşlem tamamlandı."
+    }
+
     static func icerik(bolum: String, h: String?, token: String) async throws -> IcerikCevabi {
         var sorgu = [URLQueryItem(name: "bolum", value: bolum)]
         if let h = h, !h.isEmpty {
