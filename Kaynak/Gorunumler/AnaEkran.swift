@@ -80,12 +80,20 @@ struct AnaEkran: View {
     @State private var bekleyenSoru = 0
     @State private var yakindaAcik = false
 
+    /// Kart zemininin üst alana binme miktarı (aynı zamanda köşe yuvarlaklığı).
+    static let sayfaBinmesi: CGFloat = 28
+
     var body: some View {
         YenilenebilirKaydirma {
             VStack(spacing: 0) {
+                // Büyük başlık (iOS tarzı); kartların zemini yuvarlak köşeli bir sayfa gibi
+                // bu alanın üstüne biner.
                 Kahraman(baslik: "Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋",
                          aciklama: "Aradığın mevzuata hızlıca ulaş.",
-                         tekSatir: true)
+                         tekSatir: true,
+                         baslikBoyutu: 32,
+                         ustBosluk: 14,
+                         altBosluk: 24 + AnaEkran.sayfaBinmesi)
 
                 VStack(alignment: .leading, spacing: 12) {
                     durumSatiri
@@ -139,21 +147,41 @@ struct AnaEkran: View {
                     .padding(.top, 10)
                 }
                 .buttonStyle(.plain)
-                .padding(16)
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
+                .padding(.bottom, 16)
+                .background(
+                    RoundedRectangle(cornerRadius: AnaEkran.sayfaBinmesi, style: .continuous)
+                        .fill(Renk.zemin)
+                )
+                .padding(.top, -AnaEkran.sayfaBinmesi)
             }
         }
         .background(Renk.zemin.ignoresSafeArea())
+        // Geri düğmesinde görünen ad; başlık ortada gösterilmez.
         .navigationTitle("Mevzuat Rehberi")
-        .markaBasligi()
+        .navigationBarTitleDisplayMode(.inline)
         .toolbar {
+            ToolbarItem(placement: .principal) {
+                Color.clear.frame(width: 1, height: 1)
+                    .accessibilityHidden(true)
+            }
+            ToolbarItem(placement: .navigationBarLeading) {
+                AnaMarkaEtiketi()
+            }
             ToolbarItem(placement: .navigationBarTrailing) {
                 Button {
                     // Sitedeki ay simgesi: koyudaysa gündüze, açıktaysa geceye geçer.
                     gorunum = sema == .dark ? "acik" : "koyu"
                 } label: {
                     Image(systemName: sema == .dark ? "sun.max" : "moon")
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Color.white.opacity(0.10)))
+                        .overlay(Circle().stroke(Color.white.opacity(0.16), lineWidth: 1))
                 }
+                .accessibilityLabel(sema == .dark ? "Gündüz moduna geç" : "Gece moduna geç")
             }
         }
         .fullScreenCover(item: $icSayfa) { s in
@@ -208,6 +236,29 @@ struct AnaEkran: View {
                 .font(.caption)
                 .foregroundColor(Renk.soluk)
         }
+    }
+}
+
+/// Ana sayfa üst çubuğu: solda amblem simgesi ve altın renkli "MEVZUAT REHBERİ" etiketi.
+struct AnaMarkaEtiketi: View {
+    var body: some View {
+        HStack(spacing: 10) {
+            Image("AmblemSimge")
+                .resizable()
+                .scaledToFit()
+                .frame(height: 22)
+            Rectangle()
+                .fill(Color.white.opacity(0.22))
+                .frame(width: 1, height: 18)
+            Text("MEVZUAT REHBERİ")
+                .font(.system(size: 12.5, weight: .semibold))
+                .kerning(2.4)
+                .foregroundColor(Renk.altin)
+                .lineLimit(1)
+                .fixedSize()
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Mevzuat Rehberi")
     }
 }
 

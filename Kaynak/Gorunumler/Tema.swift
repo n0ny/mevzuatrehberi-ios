@@ -34,6 +34,8 @@ enum Renk {
     static let kirmiziZemin = Color(UIColor.dinamik(0xFCECEE, 0x2C151A))
     static let amber = Color(UIColor.dinamik(0x8A5A00, 0xF0C070))
     static let amberZemin = Color(UIColor.dinamik(0xFFF6E0, 0x2A2210))
+    /// Ana sayfa üst alanındaki "MEVZUAT REHBERİ" etiketi (yumuşak altın).
+    static let altin = Color(UIColor(onaltilik: 0xDDBF7E))
 
     static let kahramanAcik = [UIColor(onaltilik: 0x08243A), UIColor(onaltilik: 0x0B2E4A), UIColor(onaltilik: 0x11456B)]
     static let kahramanKoyu = [UIColor(onaltilik: 0x050E17), UIColor(onaltilik: 0x08223A), UIColor(onaltilik: 0x0D3556)]
@@ -114,13 +116,22 @@ struct Kahraman<Icerik: View>: View {
     let aciklama: String?
     /// true: başlık tek satıra sığdırılır (uzun isimlerde yazı küçülür).
     let tekSatir: Bool
+    /// Verilmezse tek satırda 26, çok satırda 30 punto.
+    let baslikBoyutu: CGFloat?
+    let ustBosluk: CGFloat
+    let altBosluk: CGFloat
     let icerik: Icerik
     @Environment(\.colorScheme) private var sema
 
-    init(baslik: String, aciklama: String? = nil, tekSatir: Bool = false, @ViewBuilder icerik: () -> Icerik) {
+    init(baslik: String, aciklama: String? = nil, tekSatir: Bool = false,
+         baslikBoyutu: CGFloat? = nil, ustBosluk: CGFloat = 8, altBosluk: CGFloat = 24,
+         @ViewBuilder icerik: () -> Icerik) {
         self.baslik = baslik
         self.aciklama = aciklama
         self.tekSatir = tekSatir
+        self.baslikBoyutu = baslikBoyutu
+        self.ustBosluk = ustBosluk
+        self.altBosluk = altBosluk
         self.icerik = icerik()
     }
 
@@ -129,13 +140,13 @@ struct Kahraman<Icerik: View>: View {
         VStack(alignment: .leading, spacing: 10) {
             if tekSatir {
                 Text(baslik)
-                    .font(.system(size: 26, weight: .bold, design: .serif))
+                    .font(.system(size: baslikBoyutu ?? 26, weight: .bold, design: .serif))
                     .foregroundColor(.white)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             } else {
                 Text(baslik)
-                    .font(.system(size: 30, weight: .bold, design: .serif))
+                    .font(.system(size: baslikBoyutu ?? 30, weight: .bold, design: .serif))
                     .foregroundColor(.white)
                     .fixedSize(horizontal: false, vertical: true)
             }
@@ -148,13 +159,15 @@ struct Kahraman<Icerik: View>: View {
             icerik
         }
         .padding(.horizontal, 18)
-        .padding(.top, 8)
-        .padding(.bottom, 24)
+        .padding(.top, ustBosluk)
+        .padding(.bottom, altBosluk)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             // Üst çubuk ve aşağı çekme boşluğu da aynı lacivertle dolsun diye zemin yukarı uzatılır.
+            // Renk geçişi, saat ve üst çubuğun arkasından (yaklaşık 110 nk yukarıdan) başlar;
+            // böylece üst çubuk ile bu alan arasında ek yeri görünmez.
             VStack(spacing: 0) {
-                renkler[0].frame(height: 1200)
+                renkler[0].frame(height: 1200 - 110)
                 LinearGradient(gradient: Gradient(colors: renkler), startPoint: .top, endPoint: .bottom)
                     .overlay(
                         RadialGradient(gradient: Gradient(colors: [Color(red: 74 / 255, green: 168 / 255, blue: 237 / 255).opacity(0.28),
@@ -169,8 +182,10 @@ struct Kahraman<Icerik: View>: View {
 }
 
 extension Kahraman where Icerik == EmptyView {
-    init(baslik: String, aciklama: String? = nil, tekSatir: Bool = false) {
-        self.init(baslik: baslik, aciklama: aciklama, tekSatir: tekSatir) { EmptyView() }
+    init(baslik: String, aciklama: String? = nil, tekSatir: Bool = false,
+         baslikBoyutu: CGFloat? = nil, ustBosluk: CGFloat = 8, altBosluk: CGFloat = 24) {
+        self.init(baslik: baslik, aciklama: aciklama, tekSatir: tekSatir,
+                  baslikBoyutu: baslikBoyutu, ustBosluk: ustBosluk, altBosluk: altBosluk) { EmptyView() }
     }
 }
 

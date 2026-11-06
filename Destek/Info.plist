@@ -19,6 +19,8 @@
     <dict>
         <key>UIApplicationSupportsMultipleScenes</key><false/>
     </dict>
+    <key>UIStatusBarStyle</key><string>UIStatusBarStyleLightContent</string>
+    <key>UIViewControllerBasedStatusBarAppearance</key><false/>
     <key>UILaunchScreen</key>
     <dict/>
     <key>UISupportedInterfaceOrientations</key>
