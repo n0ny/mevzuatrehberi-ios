@@ -49,10 +49,10 @@ struct HesapEkrani: View {
 
                     if yonetici {
                         HStack(spacing: 10) {
-                            YoneticiDugmesi(sembol: panelAciliyor == "destek" ? "hourglass" : "bubble.left.and.bubble.right",
-                                            baslik: "Destek paneli") {
-                                paneliAc("destek", baslik: "Destek paneli")
+                            NavigationLink(destination: DestekEkrani()) {
+                                YoneticiEtiketi(sembol: "bubble.left.and.bubble.right", baslik: "Destek paneli")
                             }
+                            .buttonStyle(.plain)
                             NavigationLink(destination: YonetimEkrani()) {
                                 YoneticiEtiketi(sembol: "gearshape", baslik: "Yönetim paneli")
                             }

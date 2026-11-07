@@ -397,6 +397,33 @@ enum APIIstemci {
         return j["mesaj"]?.metin ?? "İşlem tamamlandı."
     }
 
+    // MARK: Destek paneli (yalnızca yönetici) — api/destek.php
+
+    /// durum: acik / yanitlandi / hepsi
+    static func destekListesi(durum: String, token: String) async throws -> DestekListesi {
+        let j = try await gonder(tokenliIstek("destek.php",
+                                              sorgu: [URLQueryItem(name: "durum", value: durum)],
+                                              token: token))
+        return try snakeCoz(j, DestekListesi.self)
+    }
+
+    static func destekTalebi(id: Int, token: String) async throws -> DestekAyrintisi {
+        let j = try await gonder(tokenliIstek("destek.php",
+                                              sorgu: [URLQueryItem(name: "id", value: String(id))],
+                                              token: token))
+        return try snakeCoz(j, DestekAyrintisi.self)
+    }
+
+    /// yanitla (id, yanit) / sil (id) — yanit.php ile aynı. Başarı mesajını döndürür.
+    static func destekIslem(_ islem: String, alanlar: [String: String], token: String) async throws -> String {
+        var govde = alanlar
+        govde["islem"] = islem
+        var istek = tokenliIstek("destek.php", token: token, govde: govde)
+        istek.timeoutInterval = 90
+        let j = try await gonder(istek)
+        return j["mesaj"]?.metin ?? "İşlem tamamlandı."
+    }
+
     static func icerik(bolum: String, h: String?, token: String) async throws -> IcerikCevabi {
         var sorgu = [URLQueryItem(name: "bolum", value: bolum)]
         if let h = h, !h.isEmpty {
