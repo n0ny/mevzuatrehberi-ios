@@ -215,6 +215,32 @@ struct MevzuatAramaMotoru {
         return true
     }
 
+    /// mevzuat.php $katla: normalize + Türkçe harfler sadeleşir, harf/rakam dışı her şey atılır.
+    static func katla(_ s: String) -> String {
+        let n = TRMetin.normal(s)
+        let degisim: [Character: Character] = ["ı": "i", "ş": "s", "ğ": "g", "ü": "u", "ö": "o", "ç": "c",
+                                               "â": "a", "î": "i", "û": "u"]
+        var sonuc = ""
+        for c in n {
+            let h = degisim[c] ?? c
+            if let a = h.asciiValue, (a >= 97 && a <= 122) || (a >= 48 && a <= 57) {
+                sonuc.append(h)
+            }
+        }
+        return sonuc
+    }
+
+    /// mevzuat.php $yaziPuani: Türkçe karakteri doğru yazılmış, tamamı büyük harf fiil tercih edilir.
+    static func yaziPuani(_ fiil: String) -> Int {
+        var puan = 0
+        var kucukVar = false
+        for u in fiil.unicodeScalars {
+            if "çğıöşüÇĞİÖŞÜ".unicodeScalars.contains(u) { puan += 1 }
+            if u.properties.generalCategory == .lowercaseLetter { kucukVar = true }
+        }
+        return kucukVar ? puan - 100 : puan
+    }
+
     func ara(_ hamSorgu: String) -> [AramaKaydi] {
         let q = hamSorgu.trimmingCharacters(in: .whitespacesAndNewlines)
         if TRMetin.uzunluk(q) < 2 { return [] }
@@ -254,13 +280,34 @@ struct MevzuatAramaMotoru {
             !$0.fiil.isEmpty && MevzuatAramaMotoru.eslesir(kelimeler: $0.fiilKelimeleri, sorgu: qNorm, parcalar: tokens)
         }
 
-        // 4) Tekrarları ayıkla
-        var gorulen = Set<String>()
+        // 4) Tekrarları ayıkla: aynı fiil + aynı dayanak tek kart (Türkçe karakter, büyük-küçük harf,
+        //    boşluk ve noktalama farkı yok sayılır). Birleşen sevk kayıtlarının dayanakları tekrarsız toplanır.
+        var gorulen: [String: Int] = [:]
         var tekil: [AramaKaydi] = []
         for s in satirlar {
-            let anahtar = TRMetin.normal(s.fiil + "|" + s.mevzuat + "|" + s.madde + "|" + s.bent)
-            if anahtar == "|||" || gorulen.contains(anahtar) { continue }
-            gorulen.insert(anahtar)
+            let anahtar = MevzuatAramaMotoru.katla(s.fiil) + "|" + MevzuatAramaMotoru.katla(s.mevzuat) + "|"
+                + MevzuatAramaMotoru.katla(s.madde) + "|" + MevzuatAramaMotoru.katla(s.bent)
+            if anahtar == "|||" { continue }
+            if let i = gorulen[anahtar] {
+                if tekil[i].sevkMi && s.sevkMi {
+                    var liste = tekil[i].dayanaklar
+                    var var_ = Set(liste.map { TRMetin.normal($0) })
+                    for d in s.dayanaklar {
+                        let n = TRMetin.normal(d)
+                        if n.isEmpty || var_.contains(n) { continue }
+                        var_.insert(n)
+                        liste.append(d)
+                    }
+                    let fiil = MevzuatAramaMotoru.yaziPuani(s.fiil) > MevzuatAramaMotoru.yaziPuani(tekil[i].fiil)
+                        ? s.fiil : tekil[i].fiil
+                    let e = tekil[i]
+                    tekil[i] = AramaKaydi(kaynak: e.kaynak, id: e.id, fiil: fiil, mevzuat: e.mevzuat, madde: e.madde,
+                                          bent: e.bent, aciklama: e.aciklama, kapsam: e.kapsam,
+                                          kaynakMetni: e.kaynakMetni, etiket: e.etiket, dayanaklar: liste)
+                }
+                continue
+            }
+            gorulen[anahtar] = tekil.count
             tekil.append(s)
         }
 
@@ -369,6 +416,8 @@ struct KaynakListesi: Codable {
     let genel: Site
     let ek: [Site]
     let aciklama1380: [String: Aciklama]
+    /// 36. maddenin bentleri → hangi maddenin yaptırımı (sunucuda yoksa uygulamadaki kopya).
+    let bent36: [String: String]?
     let genelAciklama: String
     let yaptirim: YaptirimAyari?
 
@@ -380,7 +429,7 @@ struct KaynakListesi: Codable {
             return liste
         }
         return KaynakListesi(mevzuat: [], genel: Site(ad: "Mevzuat Bilgi Sistemi", url: "https://www.mevzuat.gov.tr"),
-                             ek: [], aciklama1380: [:], genelAciklama: "", yaptirim: nil)
+                             ek: [], aciklama1380: [:], bent36: nil, genelAciklama: "", yaptirim: nil)
     }()
 
     /// İdari yaptırım sayfasının ayarları (sunucudan gelmediyse uygulamadaki kopya).
@@ -458,18 +507,132 @@ struct KaynakListesi: Codable {
         return ResmiKaynak(ad: genel.ad, url: g, site: KaynakListesi.alanAdi(genel.url), eslesti: false)
     }
 
-    /// 1380 sayılı Kanunun doğrulanmış maddelerinden biri mi? (mevzuat.php madde1380)
-    /// Not: Yalnızca metinde 1380 / Su Ürünleri Kanunu geçiyorsa açıklama verilir.
-    func dogrulanmis1380(_ metin: String) -> Aciklama? {
+    // MARK: 1380 madde açıklamaları (mevzuat.php / sevk_islemleri.php ile birebir)
+
+    static let kanun1380 = "1380 sayılı Su Ürünleri Kanunu"
+
+    /// Dayanaktan çözülen 1380 maddesi (madde: "23", "EK 5"; fıkra: "2"; bent: "b").
+    struct Madde1380: Equatable {
+        let madde: String
+        let fikra: String
+        let bent: String
+
+        /// etiket1380: "Madde 23/1-b", "Madde 3/2", "Ek Madde 5"
+        var etiket: String {
+            if madde.hasPrefix("EK ") { return "Ek Madde " + String(madde.dropFirst(3)) }
+            var t = "Madde " + madde
+            if !fikra.isEmpty || !bent.isEmpty { t += "/" + (fikra.isEmpty ? "1" : fikra) }
+            if !bent.isEmpty { t += "-" + bent }
+            return t
+        }
+    }
+
+    /// Kartta gösterilecek tek dayanak bloğu.
+    struct DayanakGosterimi {
+        let baslik: String
+        let aciklama: String
+        let kaynakMetni: String
+    }
+
+    private static func gruplar(_ desen: String, _ metin: String, buyukKucukDuyarsiz: Bool = false) -> [String]? {
+        guard let r = try? NSRegularExpression(pattern: desen, options: buyukKucukDuyarsiz ? [.caseInsensitive] : []) else {
+            return nil
+        }
+        let aralik = NSRange(metin.startIndex..<metin.endIndex, in: metin)
+        guard let m = r.firstMatch(in: metin, options: [], range: aralik) else { return nil }
+        var sonuc: [String] = []
+        for i in 0..<m.numberOfRanges {
+            if let g = Range(m.range(at: i), in: metin) { sonuc.append(String(metin[g])) } else { sonuc.append("") }
+        }
+        return sonuc
+    }
+
+    /// yasal1380Coz: "1380 Su Ürünleri Kanunu-01 Ocak 2020 23.MADDE - 1 FIKRASI - b BENDİ" gibi yazımlar.
+    static func yasal1380Coz(_ metin: String) -> Madde1380? {
         let s = TRMetin.buyukHarf(metin)
         if !TRMetin.eslesirMi("1380|SU URUNLERI KANUNU", s) { return nil }
-        if let ek = TRMetin.ilkGrup("EK\\s*[- ]?\\s*(3|4|5|6|7)\\s*\\.?\\s*MADDE", s) {
-            return aciklama1380["EK " + ek]
+        if let ek = TRMetin.ilkGrup("EK\\s*[- ]?\\s*(\\d+)\\s*\\.?\\s*MADDE", s) {
+            return Madde1380(madde: "EK " + ek, fikra: "", bent: "")
         }
-        if let m = TRMetin.ilkGrup("(?:^|\\s)(3|33|34|35|36)\\s*\\.?\\s*MADDE", s) {
-            return aciklama1380[m]
+        guard let r = gruplar("(?:^|[^\\d])(\\d{1,2})\\s*\\.\\s*MADDE(?:\\s*-\\s*\\(?([0-9A-Z])\\)?\\s*FIKRASI)?(?:\\s*-\\s*\\(?([0-9A-Z])\\)?\\s*BENDI)?", s),
+              r.count >= 4 else { return nil }
+        var fikra = r[2]
+        var bent = r[3]
+        if TRMetin.eslesirMi("[A-Z]", fikra) { bent = fikra; fikra = "" }   // "a FIKRASI" aslında bent
+        if TRMetin.eslesirMi("\\d", bent) { bent = "" }                     // 36/a içindeki paragraf numarası
+        return Madde1380(madde: r[1], fikra: fikra, bent: bent.lowercased())
+    }
+
+    /// zengin1380Coz: "1380 m.23/1-a-b + … → 36/1-k", "1380 Ek m.5 + 6/1 m.46 …"
+    /// Yalnızca "1380" geçen parçalar okunur; 6/1, 6/2 ve 36 (ceza) parçaları atlanır.
+    static func zengin1380Coz(_ metin: String) -> [Madde1380] {
+        var sonuc: [Madde1380] = []
+        var bolunmus = metin
+        if let r = try? NSRegularExpression(pattern: "[+;→,]|\\bveya\\b", options: []) {
+            let aralik = NSRange(metin.startIndex..<metin.endIndex, in: metin)
+            bolunmus = r.stringByReplacingMatches(in: metin, options: [], range: aralik, withTemplate: "\u{1}")
         }
+        for parca in bolunmus.components(separatedBy: "\u{1}") {
+            if !parca.contains("1380") { continue }
+            if let ek = gruplar("1380\\s+Ek\\s*m\\.?\\s*(\\d+)", parca, buyukKucukDuyarsiz: true), ek.count >= 2 {
+                sonuc.append(Madde1380(madde: "EK " + ek[1], fikra: "", bent: ""))
+                continue
+            }
+            guard let r = gruplar("1380\\s+m\\.?\\s*(\\d+)(?:/(\\d+))?(?:-([a-z](?:-[a-z])*))?", parca, buyukKucukDuyarsiz: true),
+                  r.count >= 4, r[1] != "36" else { continue }
+            let bentler = r[3].split(separator: "-").map(String.init).filter { !$0.isEmpty }
+            sonuc.append(Madde1380(madde: r[1], fikra: r[2], bent: bentler.count == 1 ? bentler[0].lowercased() : ""))
+        }
+        return sonuc
+    }
+
+    private func metin1380(_ anahtar: String) -> String? {
+        if let a = aciklama1380[anahtar]?.explain, !a.isEmpty { return a }
+        if let a = KaynakListesi.gomulu.aciklama1380[anahtar]?.explain, !a.isEmpty { return a }
         return nil
+    }
+
+    /// aciklama1380
+    func aciklama(_ k: Madde1380) -> String {
+        if k.madde == "36", !k.bent.isEmpty,
+           let b = bent36?[k.bent] ?? KaynakListesi.gomulu.bent36?[k.bent] {
+            return "36. maddenin (" + k.bent + ") bendi, " + b + " aykırılığın idari yaptırımını düzenler. Ceza tutarları İdari yaptırım bölümündedir."
+        }
+        if !k.bent.isEmpty, let a = metin1380(k.madde + "/" + k.bent) { return a }
+        if !k.fikra.isEmpty, let a = metin1380(k.madde + "/" + k.fikra) { return a }
+        return metin1380(k.madde) ?? ""
+    }
+
+    /// sevkDayanakHtml / legalBasisBlock: dayanak listesinden gösterilecek bloklar.
+    /// 1380 maddeleri kendi açıklamasıyla; aynı madde bir kez; madde içermeyen notlar gösterilmez.
+    func dayanakGosterimleri(_ liste: [String]) -> [DayanakGosterimi] {
+        var bloklar: [DayanakGosterimi] = []
+        var gorulen = Set<String>()
+        for ham in liste {
+            let d = ham.trimmingCharacters(in: .whitespacesAndNewlines)
+            if d.isEmpty { continue }
+            var anahtarlar: [Madde1380] = []
+            if let y = KaynakListesi.yasal1380Coz(d) {
+                anahtarlar = [y]
+            } else if d.contains("1380") {
+                anahtarlar = KaynakListesi.zengin1380Coz(d)
+            }
+            if !anahtarlar.isEmpty {
+                for k in anahtarlar where !gorulen.contains("m:" + k.madde) {
+                    gorulen.insert("m:" + k.madde)
+                    let a = aciklama(k)
+                    bloklar.append(DayanakGosterimi(baslik: KaynakListesi.kanun1380 + " – " + k.etiket,
+                                                    aciklama: a.isEmpty ? genelAciklama : a,
+                                                    kaynakMetni: KaynakListesi.kanun1380))
+                }
+                continue
+            }
+            if !TRMetin.eslesirMi("\\d", d) { continue }
+            if gorulen.contains("d:" + d) { continue }
+            gorulen.insert("d:" + d)
+            bloklar.append(DayanakGosterimi(baslik: d, aciklama: genelAciklama, kaynakMetni: d))
+        }
+        return bloklar
     }
 }
 

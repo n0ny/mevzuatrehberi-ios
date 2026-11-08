@@ -346,17 +346,16 @@ struct SevkDayanaklari: View {
     var aciklamaBasligi = "Ne anlatıyor?"
 
     var body: some View {
-        if dayanaklar.isEmpty {
+        let bloklar = kaynaklar.dayanakGosterimleri(dayanaklar)
+        if bloklar.isEmpty {
             Text("Bu kayıtta mevzuat dayanağı belirtilmemiş.")
                 .font(.footnote)
                 .foregroundColor(Renk.soluk)
         } else {
-            ForEach(Array(dayanaklar.enumerated()), id: \.offset) { _, d in
-                let bilgi = kaynaklar.dogrulanmis1380(d)
+            ForEach(Array(bloklar.enumerated()), id: \.offset) { _, b in
                 VStack(alignment: .leading, spacing: 10) {
-                    DayanakBlogu(baslik: bilgi?.title ?? d,
-                                 kaynak: kaynaklar.bul(mevzuat: bilgi != nil ? "1380 sayılı Su Ürünleri Kanunu" : d))
-                    AciklamaBlogu(baslik: aciklamaBasligi, metin: bilgi?.explain ?? kaynaklar.genelAciklama)
+                    DayanakBlogu(baslik: b.baslik, kaynak: kaynaklar.bul(mevzuat: b.kaynakMetni))
+                    AciklamaBlogu(baslik: aciklamaBasligi, metin: b.aciklama)
                 }
             }
         }

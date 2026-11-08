@@ -162,6 +162,14 @@ struct SevkKaydi: Identifiable {
         return liste
     }
 
+    /// Kartta tek dayanak (mevzuat.php / sevk_islemleri.php, 8 Kasım 2026):
+    /// asıl dayanak (yasal_islem_maddesi); ek dayanak notları yalnızca asıl dayanak boşsa yedek olarak.
+    var tekDayanak: [String] {
+        let yasal = yasalMadde.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !yasal.isEmpty { return [yasal] }
+        return tumDayanaklar
+    }
+
     /// Mevzuat aramasına giden kayıt (mevzuat.php 2b bölümü).
     var aramaKaydi: AramaKaydi {
         var dayanak: [String] = []
@@ -174,8 +182,10 @@ struct SevkKaydi: Identifiable {
             gorulen.insert(n)
             dayanak.append(t)
         }
+        let yasal = yasalMadde.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !yasal.isEmpty { dayanak = [yasal] }
         return AramaKaydi(kaynak: .sevk, id: "s\(id)", fiil: gerekce,
-                          mevzuat: yasalMadde.isEmpty ? (dayanak.first ?? "") : yasalMadde,
+                          mevzuat: yasal.isEmpty ? (dayanak.first ?? "") : yasal,
                           etiket: kategori, dayanaklar: dayanak)
     }
 }

@@ -121,7 +121,7 @@ struct SevkKarti: View {
                         Text("Bu kayıt hangi mevzuata dayandırılmış?")
                             .font(.footnote.weight(.semibold))
                             .foregroundColor(Renk.soluk)
-                        SevkDayanaklari(dayanaklar: kayit.tumDayanaklar, kaynaklar: kaynaklar)
+                        SevkDayanaklari(dayanaklar: kayit.tekDayanak, kaynaklar: kaynaklar)
                         UyariKutusu(tur: .bilgi, baslik: "Kontrol gerekli:",
                                     metin: "Bu kayıt kaynak bilgisine dayanmaktadır. Güncel mevzuat, madde/fiil eşleştirmesi, yetki ve sevk makamı işlem tesis edilmeden önce ayrıca doğrulanmalıdır.")
                     }
@@ -152,12 +152,8 @@ struct SevkKarti: View {
             } else {
                 IslemSatiri(baslik: "Sevk makamı", metin: "Kaynak kaydında belirtilmemiş.")
             }
-            ForEach(Array(kayit.islemler.enumerated()), id: \.offset) { _, v in
-                IslemSatiri(baslik: "Kaynak işlem bilgisi", metin: v)
-            }
-            ForEach(Array(kayit.yaptirimlar.enumerated()), id: \.offset) { _, v in
-                IslemSatiri(baslik: "Kaynak yaptırım / işlem", metin: v)
-            }
+            // Otomatik eklenmiş işlem/yaptırım notları doğrulanmamış madde kısaltmaları içerdiği için
+            // kartta gösterilmez; yalnızca sevk makamı (sevk_islemleri.php, 8 Kasım 2026). Aramada kullanılır.
         }
         UyariKutusu(tur: .dikkat, baslik: "Dikkat:",
                     metin: "Bu sevk yeri/makamı mevcut kaynak kaydından alınmıştır. Güncel mevzuat, yetki ve somut olay koşulları doğrulanmadan kesin sevk talimatı olarak kabul edilmemelidir.")

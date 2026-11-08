@@ -65,6 +65,9 @@ final class TemelTestler: XCTestCase {
         XCTAssertFalse(TRMetin.kelimeEslesir(normalMetin: s.aramaNormal, sorgu: "zıpkın"))
         XCTAssertEqual(s.aramaKaydi.etiket, "1380 Sy")
         XCTAssertEqual(s.aramaKaydi.mevzuat, "1380 Su Ürünleri Kanunu 23. madde")
+        // Kartta tek dayanak: asıl dayanak varsa yalnızca o
+        XCTAssertEqual(s.tekDayanak, ["1380 Su Ürünleri Kanunu 23. madde"])
+        XCTAssertEqual(s.aramaKaydi.dayanaklar, ["1380 Su Ürünleri Kanunu 23. madde"])
     }
 
     func testAramaEslesmesi() {
@@ -104,9 +107,53 @@ final class TemelTestler: XCTestCase {
         let bilinmeyen = k.bul(mevzuat: "Bilinmeyen düzenleme")
         XCTAssertFalse(bilinmeyen.eslesti)
         XCTAssertEqual(bilinmeyen.site, "mevzuat.gov.tr")
-        XCTAssertEqual(k.dogrulanmis1380("1380 Su Ürünleri Kanunu 36. MADDE")?.title, "1380 sayılı Su Ürünleri Kanunu – Madde 36")
-        XCTAssertEqual(k.dogrulanmis1380("1380 sy kanun EK 4. MADDE")?.title, "1380 sayılı Su Ürünleri Kanunu – Ek Madde 4")
-        XCTAssertNil(k.dogrulanmis1380("5237 TCK 33. MADDE"))
+    }
+
+    func test1380Aciklamalari() {
+        let k = KaynakListesi.gomulu
+        XCTAssertEqual(KaynakListesi.yasal1380Coz("1380 Su Ürünleri Kanunu-01 Ocak 2020 23.MADDE - 1 FIKRASI - b BENDİ")?.etiket, "Madde 23/1-b")
+        XCTAssertEqual(KaynakListesi.yasal1380Coz("1380 Su Ürünleri Kanunu-01 Ocak 2020 3.MADDE - 2 FIKRASI")?.etiket, "Madde 3/2")
+        XCTAssertEqual(KaynakListesi.yasal1380Coz("1380 Su Ürünleri Kanunu-01 Ocak 2020 23.MADDE")?.etiket, "Madde 23")
+        XCTAssertEqual(KaynakListesi.yasal1380Coz("1380 SU ÜRÜNLERI-YENI  KANUN 36.MADDE - a FIKRASI - 2 BENDİ")?.etiket, "Madde 36/1-a")
+        XCTAssertEqual(KaynakListesi.yasal1380Coz("1380 Su Ürünleri Kanunu-01 Ocak 2020 Ek-4.MADDE")?.etiket, "Ek Madde 4")
+        XCTAssertNil(KaynakListesi.yasal1380Coz("5237 TCK 33. MADDE"))
+        XCTAssertEqual(KaynakListesi.zengin1380Coz("6/1 m.49/1 + 1380 m.3/2 → 36/1-a"),
+                       [KaynakListesi.Madde1380(madde: "3", fikra: "2", bent: "")])
+        XCTAssertEqual(KaynakListesi.zengin1380Coz("1380 m.23/1-a-b + ilgili güncel 6/1 veya 6/2 hükmü → 36/1-k"),
+                       [KaynakListesi.Madde1380(madde: "23", fikra: "1", bent: "")])
+        XCTAssertEqual(KaynakListesi.zengin1380Coz("1380 Ek m.5 + 6/1 m.46; 36/1-r"),
+                       [KaynakListesi.Madde1380(madde: "EK 5", fikra: "", bent: "")])
+
+        let b = k.dayanakGosterimleri(["1380 Su Ürünleri Kanunu-01 Ocak 2020 3.MADDE - 2 FIKRASI"])
+        XCTAssertEqual(b.count, 1)
+        XCTAssertEqual(b.first?.baslik, "1380 sayılı Su Ürünleri Kanunu – Madde 3/2")
+        XCTAssertTrue(b.first?.aciklama.hasPrefix("Ruhsat tezkerelerinin") ?? false)
+        XCTAssertFalse(b.first?.aciklama.contains("36/1") ?? true)
+        let b23 = k.dayanakGosterimleri(["1380 Su Ürünleri Kanunu-01 Ocak 2020 23.MADDE - 1 FIKRASI - b BENDİ"])
+        XCTAssertTrue(b23.first?.aciklama.contains("asgari boy") ?? false)
+        XCTAssertFalse(b23.first?.aciklama.contains("miktar") ?? true)
+        let b36 = k.dayanakGosterimleri(["1380 SU ÜRÜNLERI-YENI  KANUN 36.MADDE - g FIKRASI", "1380 m.19 + 36/1-g"])
+        XCTAssertEqual(b36.map { $0.baslik }, ["1380 sayılı Su Ürünleri Kanunu – Madde 36/1-g", "1380 sayılı Su Ürünleri Kanunu – Madde 19"])
+        XCTAssertTrue(b36.first?.aciklama.contains("19. maddeye") ?? false)
+        // Aynı madde bir kez; madde içermeyen notlar gösterilmez; 1380 dışı dayanak genel metinle
+        XCTAssertEqual(k.dayanakGosterimleri(["1380 Su Ürünleri Kanunu-01 Ocak 2020 23.MADDE", "1380 m.23/1-a-b → 36/1-k"]).count, 1)
+        XCTAssertTrue(k.dayanakGosterimleri(["Belirsiz — gerekçe fiili yok"]).isEmpty)
+        let tck = k.dayanakGosterimleri(["5237 TCK 33. MADDE"])
+        XCTAssertEqual(tck.first?.baslik, "5237 TCK 33. MADDE")
+        XCTAssertEqual(tck.first?.aciklama, k.genelAciklama)
+    }
+
+    func testAyniFiilTekKart() {
+        XCTAssertEqual(MevzuatAramaMotoru.katla("MİDYE avcılığı."), MevzuatAramaMotoru.katla("MIDYE AVCILIGI"))
+        XCTAssertGreaterThan(MevzuatAramaMotoru.yaziPuani("MİDYE AVCILIĞI"), MevzuatAramaMotoru.yaziPuani("MIDYE AVCILIGI"))
+        let a = AramaKaydi(kaynak: .sevk, id: "s1", fiil: "MIDYE AVCILIGI YAPMAK", mevzuat: "1380 23.MADDE",
+                           dayanaklar: ["1380 23.MADDE"])
+        let b = AramaKaydi(kaynak: .sevk, id: "s2", fiil: "MİDYE AVCILIĞI YAPMAK", mevzuat: "1380 23.MADDE",
+                           dayanaklar: ["1380 23.MADDE"])
+        let motor = MevzuatAramaMotoru(eski: [], v5: [], sevk: [a, b])
+        let sonuc = motor.ara("midye")
+        XCTAssertEqual(sonuc.count, 1)
+        XCTAssertEqual(sonuc.first?.fiil, "MİDYE AVCILIĞI YAPMAK")
     }
 
     func testGosterim() {
