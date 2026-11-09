@@ -418,6 +418,9 @@ enum TekneSimge {
         case "user-card": return "person.text.rectangle"
         case "volume": return "speaker.wave.2"
         case "zap": return "flashlight.on.fill"
+        case "users": return "person.2"
+        case "compass": return "safari"
+        case "trash": return "trash"
         default: return "doc.text"
         }
     }
