@@ -54,6 +54,7 @@ struct KokGorunum: View {
                 }
             }
         }
+        .background(KlavyeKapatici().frame(width: 0, height: 0))
         .preferredColorScheme(gorunum == "acik" ? .light : (gorunum == "koyu" ? .dark : nil))
         .onAppear { foto.kullaniciAyarla(oturum.kullanici?.id) }
         .onChange(of: oturum.kullanici?.id) { yeni in foto.kullaniciAyarla(yeni) }

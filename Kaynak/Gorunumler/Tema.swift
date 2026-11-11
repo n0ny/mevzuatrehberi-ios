@@ -517,6 +517,8 @@ private struct YenilemeBaglayici: UIViewRepresentable {
                 kontrol.layer.zPosition = 10
                 kontrol.addTarget(k, action: #selector(Koordinator.yenile(_:)), for: .valueChanged)
                 kaydirma.alwaysBounceVertical = true
+                // Sayfa aşağı kaydırılınca klavye de aşağı insin.
+                kaydirma.keyboardDismissMode = .interactive
                 kaydirma.refreshControl = kontrol
             }
         }
