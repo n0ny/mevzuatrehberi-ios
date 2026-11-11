@@ -13,7 +13,7 @@ struct GirisEkrani: View {
     @State private var bilgi: String?
     @State private var kayitAcik = false
     @State private var sifreUnuttumAcik = false
-    @State private var icSayfa: IcWebSayfasi?
+    @State private var gizlilikAcik = false
     /// index.php'deki "Beni hatırla": yalnızca kullanıcı adı bu telefonda hatırlanır.
     @AppStorage("giris.hatirla") private var hatirla = false
     @AppStorage("giris.kullanici") private var hatirlananKullanici = ""
@@ -129,8 +129,7 @@ struct GirisEkrani: View {
                             .foregroundColor(.white.opacity(0.65))
                             .fixedSize(horizontal: false, vertical: true)
                         Button("Gizlilik Politikası") {
-                            icSayfa = IcWebSayfasi(baslik: "Gizlilik Politikası",
-                                                   url: Ayarlar.siteAdresi.appendingPathComponent("gizlilik-politikasi.php"))
+                            gizlilikAcik = true
                         }
                         .font(.caption.weight(.heavy))
                         .foregroundColor(GirisRenk.baglanti)
@@ -151,8 +150,19 @@ struct GirisEkrani: View {
         .sheet(isPresented: $sifreUnuttumAcik) {
             SifremiUnuttumEkrani()
         }
-        .fullScreenCover(item: $icSayfa) { s in
-            IcWebEkrani(sayfa: s)
+        .sheet(isPresented: $gizlilikAcik) {
+            // Giriş ekranında gezinme yok; metin kendi penceresinde, "Kapat" düğmesiyle açılır.
+            NavigationView {
+                YasalMetinEkrani(sayfa: "gizlilik")
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button("Kapat") { gizlilikAcik = false }
+                                .foregroundColor(.white)
+                        }
+                    }
+            }
+            .environmentObject(oturum)
+            .environmentObject(depo)
         }
         .onAppear {
             if hatirla && kullanici.isEmpty {

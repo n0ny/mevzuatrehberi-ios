@@ -75,7 +75,6 @@ struct AnaEkran: View {
     @EnvironmentObject var depo: VeriDeposu
     @Environment(\.colorScheme) private var sema
     @AppStorage("gorunum") private var gorunum = "otomatik"
-    @State private var icSayfa: IcWebSayfasi?
     /// dashboard.php rozeti: bu haftanın setinde cevap bekleyen soru sayısı.
     @State private var bekleyenSoru = 0
     @State private var yakindaAcik = false
@@ -134,10 +133,7 @@ struct AnaEkran: View {
                             .foregroundColor(Renk.soluk)
                             .multilineTextAlignment(.center)
                             .fixedSize(horizontal: false, vertical: true)
-                        Button {
-                            icSayfa = IcWebSayfasi(baslik: "KVKK aydınlatma metni",
-                                                   url: Ayarlar.siteAdresi.appendingPathComponent("kvkk.php"))
-                        } label: {
+                        NavigationLink(destination: YasalMetinEkrani(sayfa: "kvkk")) {
                             Text("KVKK aydınlatma metni")
                                 .font(.caption.weight(.semibold))
                                 .foregroundColor(Renk.mavi)
@@ -183,9 +179,6 @@ struct AnaEkran: View {
                 }
                 .accessibilityLabel(sema == .dark ? "Gündüz moduna geç" : "Gece moduna geç")
             }
-        }
-        .fullScreenCover(item: $icSayfa) { s in
-            IcWebEkrani(sayfa: s)
         }
         .onAppear { bekleyenleriYukle() }
         .sheet(isPresented: $yakindaAcik) {
