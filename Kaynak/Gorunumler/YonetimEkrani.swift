@@ -6,6 +6,8 @@ struct YonetimVerisi: Codable {
     let toplam: Int
     let bekleyen: Int
     let kullanicilar: [YonetimKullanici]
+    /// Sunucu "Kime gönderilsin" ve "yalnız bana" seçeneklerini destekliyor mu (güncel api/yonetim.php).
+    var bildirimSecenekleri: Bool?
 }
 
 struct YonetimKullanici: Codable, Identifiable, Equatable {
@@ -130,7 +132,7 @@ struct YonetimEkrani: View {
                         Bildirim(metin: m.metin, hata: m.hata)
                     }
 
-                    BildirimGonderKarti()
+                    BildirimGonderKarti(seceneklerVar: veri?.bildirimSecenekleri == true)
 
                     icerikYonetimi
 
@@ -584,6 +586,11 @@ struct KullaniciSatiri: View {
 /// Bildirim gönder kartı (admin/index.php "Bildirim gönder").
 struct BildirimGonderKarti: View {
     @EnvironmentObject var oturum: Oturum
+    /// Eski sunucu kime/yalnız bana seçimini bilmez ve herkese gönderir; o durumda seçimle gönderilmez.
+    var seceneklerVar = false
+    /// "" hepsi, "android", "ios"
+    @State private var platform = ""
+    @State private var yalnizBen = false
     @State private var baslik = ""
     @State private var metin = ""
     @State private var soruAcik = false
@@ -609,10 +616,26 @@ struct BildirimGonderKarti: View {
             Text("Mevzuat Rehberi uygulamasına kayıtlı cihazlara duyuru gönderin.")
                 .font(.footnote)
                 .foregroundColor(Renk.soluk)
-            Text("Şimdilik yalnızca Android telefonlara ulaşır; iPhone bildirimi için Apple Developer hesabı gerekiyor.")
+            Text("iPhone'lara bildirim henüz ulaşmıyor; bunun için Apple Developer hesabı gerekiyor. Şimdilik bildirimler Android telefonlara gider.")
                 .font(.caption)
                 .foregroundColor(Renk.amber)
                 .fixedSize(horizontal: false, vertical: true)
+            VStack(alignment: .leading, spacing: 6) {
+                Text("Kime gönderilsin?").font(.caption.weight(.semibold)).foregroundColor(Renk.soluk)
+                Picker("Kime gönderilsin?", selection: $platform) {
+                    Text("Hepsi").tag("")
+                    Text("Yalnız Android").tag("android")
+                    Text("Yalnız iPhone").tag("ios")
+                }
+                .pickerStyle(.segmented)
+            }
+            Toggle(isOn: $yalnizBen) {
+                Text("Deneme: yalnız bana gönder (diğer kullanıcılara gitmez)")
+                    .font(.footnote)
+                    .foregroundColor(Renk.murekkep)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .tint(Renk.mavi)
             Giris(etiket: "Bildirim başlığı") {
                 TextField("Örn. Yeni özellik eklendi", text: $baslik)
                     .foregroundColor(Renk.murekkep)
@@ -640,12 +663,18 @@ struct BildirimGonderKarti: View {
                 .overlay(RoundedRectangle(cornerRadius: 10).stroke(Renk.cizgi, lineWidth: 1))
             }
             AnaDugme(baslik: gonderiliyor ? "Gönderiliyor…" : "Bildirimi gönder", bekliyor: gonderiliyor) {
+                hata = nil
+                if !seceneklerVar && (yalnizBen || !platform.isEmpty) {
+                    hata = "Sunucu henüz \"Kime gönderilsin\" ve \"yalnız bana\" seçeneklerini desteklemiyor; bildirim herkese giderdi, gönderilmedi."
+                    return
+                }
                 soruAcik = true
             }
         }
         .padding(16)
         .kart()
-        .alert("Bu bildirimi kayıtlı cihazlara göndermek istiyor musunuz?", isPresented: $soruAcik) {
+        .alert(yalnizBen ? "Deneme bildirimi yalnızca sizin cihazlarınıza gönderilecek. Devam edilsin mi?"
+                         : "Bu bildirimi kayıtlı cihazlara göndermek istiyor musunuz?", isPresented: $soruAcik) {
             Button("Gönder") { gonder() }
             Button("Vazgeç", role: .cancel) {}
         }
@@ -696,9 +725,11 @@ struct BildirimGonderKarti: View {
         sonuc = nil
         let b = baslik
         let m = metin
+        let pl = platform
+        let ben = yalnizBen
         Task {
             do {
-                let s = try await APIIstemci.yonetimBildirim(baslik: b, metin: m, token: t)
+                let s = try await APIIstemci.yonetimBildirim(baslik: b, metin: m, platform: pl, yalnizBen: ben, token: t)
                 sonuc = s
                 gonderilenBaslik = b
                 if s.gonderildi {

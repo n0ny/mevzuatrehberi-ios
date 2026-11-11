@@ -302,9 +302,12 @@ enum APIIstemci {
     }
 
     /// Bildirim gönder (admin/send_notification.php ile aynı).
-    static func yonetimBildirim(baslik: String, metin: String, token: String) async throws -> BildirimSonucu {
-        let j = try await gonder(tokenliIstek("yonetim.php", token: token,
-                                              govde: ["islem": "bildirim", "title": baslik, "body": metin]))
+    /// platform: "" hepsi, "android", "ios". yalnizBen: deneme, yalnızca bu yöneticinin cihazlarına.
+    static func yonetimBildirim(baslik: String, metin: String, platform: String = "", yalnizBen: Bool = false,
+                                token: String) async throws -> BildirimSonucu {
+        var govde = ["islem": "bildirim", "title": baslik, "body": metin, "platform": platform]
+        if yalnizBen { govde["deneme"] = "1" }
+        let j = try await gonder(tokenliIstek("yonetim.php", token: token, govde: govde))
         return try snakeCoz(j, BildirimSonucu.self)
     }
 
