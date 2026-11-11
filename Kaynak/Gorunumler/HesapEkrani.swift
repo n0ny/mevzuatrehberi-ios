@@ -70,6 +70,7 @@ struct HesapEkrani: View {
                         silmeKarti
                     }
                     icerikKarti
+                    yasalKarti
                     cikisKarti
                 }
                 .padding(16)
@@ -295,6 +296,37 @@ struct HesapEkrani: View {
                 Task { await Eylemler.guncelle(oturum: oturum, depo: depo) }
             }
         }
+    }
+
+    /// Android'deki gibi: Gizlilik Politikası ve KVKK metni (uygulamanın kendi ekranında).
+    private var yasalKarti: some View {
+        VStack(spacing: 0) {
+            NavigationLink(destination: YasalMetinEkrani(sayfa: "kvkk")) {
+                yasalSatir(sembol: "checkmark.shield", baslik: "KVKK aydınlatma metni")
+            }
+            Rectangle().fill(Renk.cizgi).frame(height: 1).padding(.leading, 64)
+            NavigationLink(destination: YasalMetinEkrani(sayfa: "gizlilik")) {
+                yasalSatir(sembol: "lock.shield", baslik: "Gizlilik politikası")
+            }
+        }
+        .buttonStyle(.plain)
+        .kart()
+    }
+
+    private func yasalSatir(sembol: String, baslik: String) -> some View {
+        HStack(spacing: 12) {
+            KartSimgesi(sembol: sembol)
+            Text(baslik)
+                .font(.subheadline.weight(.semibold))
+                .foregroundColor(Renk.murekkep)
+            Spacer()
+            Image(systemName: "chevron.right")
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Renk.soluk)
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 12)
+        .contentShape(Rectangle())
     }
 
     private var cikisKarti: some View {

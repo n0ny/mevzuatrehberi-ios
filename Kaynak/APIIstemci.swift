@@ -266,6 +266,15 @@ enum APIIstemci {
                                           govde: ["soru_id": String(soruId), "secim": secim]))
     }
 
+    // MARK: Gizlilik / KVKK — api/yasal-metin.php (giriş gerekmez)
+
+    static func yasalMetin(sayfa: String) async throws -> YasalMetin {
+        var istek = URLRequest(url: adres("yasal-metin.php", sorgu: [URLQueryItem(name: "sayfa", value: sayfa)]))
+        istek.setValue("application/json", forHTTPHeaderField: "Accept")
+        let j = try await gonder(istek)
+        return try snakeCoz(j, YasalMetin.self)
+    }
+
     // MARK: Yönetim (yalnızca yönetici) — api/yonetim.php
 
     private static func snakeCoz<T: Decodable>(_ j: [String: JSONDeger], _ tur: T.Type) throws -> T {
