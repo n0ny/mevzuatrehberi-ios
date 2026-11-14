@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// register.php — Kayıt ol. İşlemi sunucuda sitenin kendi kayıt sayfası yapar
-/// (aynı kurallar, aynı kayıt kodu, hesap yönetici onayı bekler).
+/// (aynı kurallar). Kayıt kodu isteğe bağlı: doğru kodla hesap hemen açılır, kodsuz kayıt yönetici onayı bekler.
 struct KayitEkrani: View {
     /// Kayıt başarılıysa mesajla çağrılır (giriş ekranında gösterilir).
     let tamamlandi: (String) -> Void
@@ -66,7 +66,7 @@ struct KayitEkrani: View {
     private var form: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "lock.shield")
-            Text("Kayıt kodu yalnızca uygulamayı kullanmaya yetkili kişilerle paylaşılmalıdır.")
+            Text("Kayıt kodunuz varsa girin, hesabınız hemen açılır. Kodu bilmiyorsanız boş bırakın. Kodsuz kayıtlar yönetici onayından sonra açılır.")
                 .fixedSize(horizontal: false, vertical: true)
         }
         .font(.footnote)
@@ -118,7 +118,7 @@ struct KayitEkrani: View {
             sifreAlani($sifreTekrar, yazi: "Şifre Tekrarı", alan: .tekrar) { odak = .kod }
         }
         CamAlan(simge: "number") {
-            TextField("", text: $kayitKodu, prompt: ipucu("Kayıt Kodu"))
+            TextField("", text: $kayitKodu, prompt: ipucu("Kayıt Kodu (isteğe bağlı)"))
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
                 .submitLabel(.done)
