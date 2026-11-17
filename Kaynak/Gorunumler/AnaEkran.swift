@@ -397,12 +397,12 @@ struct AnaAramaCubugu: View {
                 .foregroundColor(Renk.soluk)
                 .lineLimit(1)
             Spacer(minLength: 4)
-            Text("Ara")
-                .font(.subheadline.weight(.semibold))
+            // Sitedeki kutu gibi: "Ara" yazısı yerine ok (dokununca arama sayfası açılır).
+            Image(systemName: "arrow.right")
+                .font(.system(size: 15, weight: .bold))
                 .foregroundColor(.white)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 9)
-                .background(Capsule().fill(Renk.dugme))
+                .frame(width: 38, height: 38)
+                .background(Circle().fill(Renk.dugme))
         }
         .padding(.leading, 18)
         .padding(.trailing, 7)
