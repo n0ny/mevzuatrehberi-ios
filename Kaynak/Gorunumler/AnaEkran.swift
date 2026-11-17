@@ -84,8 +84,9 @@ struct YuzenSekmeCubugu: View {
     let hesapResmi: UIImage?
     let sec: (Int) -> Void
 
-    /// Sayfaların altında bırakılan boşluk (çubuk yüksekliği + kalkan dairenin payı).
-    static let kaplama: CGFloat = 76
+    /// Sayfaların altında bırakılan boşluk: çubuk (64) + yukarı kalkan seçili daire (~15) + nefes payı.
+    /// Listenin sonuna gelince en alttaki yazı menünün üstünde kalır.
+    static let kaplama: CGFloat = 104
 
     private struct Oge {
         let no: Int
