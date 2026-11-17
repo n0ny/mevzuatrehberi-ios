@@ -31,19 +31,7 @@ struct AnaSekmeler: View {
         }
         .overlay(alignment: .bottom) {
             if !klavyeAcik {
-                ZStack(alignment: .bottom) {
-                    // Menünün arkası: sayfanın alt rengiyle dolar, yukarı doğru yumuşakça kaybolur;
-                    // kayan yazılar menünün arkasında ve altında görünmez.
-                    LinearGradient(gradient: Gradient(stops: [
-                        .init(color: Renk.denizSon.opacity(0), location: 0),
-                        .init(color: Renk.denizSon.opacity(0.92), location: 0.35),
-                        .init(color: Renk.denizSon, location: 1),
-                    ]), startPoint: .top, endPoint: .bottom)
-                    .frame(height: YuzenSekmeCubugu.kaplama + 10)
-                    .ignoresSafeArea(edges: .bottom)
-                    .allowsHitTesting(false)
-                    YuzenSekmeCubugu(secili: secili, yeniSayisi: yeniSayisi, hesapResmi: foto.resim) { sec($0) }
-                }
+                YuzenSekmeCubugu(secili: secili, yeniSayisi: yeniSayisi, hesapResmi: foto.resim) { sec($0) }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -88,15 +76,16 @@ struct AnaSekmeler: View {
     }
 }
 
-/// Altta yüzen, yuvarlak sekme çubuğu. Seçili sekme lacivert bir daire içinde yukarı kalkar.
+/// Ekranın altına oturan sekme çubuğu (üst köşeleri yuvarlak, zemini ekranın en altına kadar iner).
+/// Seçili sekme lacivert bir daire içinde yukarı kalkar.
 struct YuzenSekmeCubugu: View {
     let secili: Int
     let yeniSayisi: Int
     let hesapResmi: UIImage?
     let sec: (Int) -> Void
 
-    /// Sayfaların altında bırakılan boşluk (çubuk + kenar boşluğu).
-    static let kaplama: CGFloat = 100
+    /// Sayfaların altında bırakılan boşluk (çubuk yüksekliği + kalkan dairenin payı).
+    static let kaplama: CGFloat = 76
 
     private struct Oge {
         let no: Int
@@ -131,15 +120,15 @@ struct YuzenSekmeCubugu: View {
         }
         .padding(.horizontal, 6)
         .frame(height: 64)
-        // İnce çerçeve zeminin parçası: seçili sekmenin yukarı kalkan dairesinin üstünden çizgi geçmesin.
+        // Zemin ekranın en altına kadar iner (alt boşluk kalmaz). İnce çerçeve zeminin parçası:
+        // seçili sekmenin yukarı kalkan dairesinin üstünden çizgi geçmesin.
         .background(
-            Capsule(style: .continuous)
+            UstKoseYuvarlak(yaricap: 26)
                 .fill(Renk.kart)
-                .overlay(Capsule(style: .continuous).stroke(Renk.cizgi.opacity(0.6), lineWidth: 0.5))
-                .shadow(color: Renk.golge, radius: 14, x: 0, y: 8)
+                .overlay(UstKoseYuvarlak(yaricap: 26).stroke(Renk.cizgi.opacity(0.6), lineWidth: 0.5))
+                .shadow(color: Renk.golge, radius: 12, x: 0, y: -2)
+                .ignoresSafeArea(edges: .bottom)
         )
-        .padding(.horizontal, 14)
-        .padding(.bottom, 6)
     }
 
     @ViewBuilder
@@ -193,6 +182,16 @@ struct YuzenSekmeCubugu: View {
     }
 }
 
+/// Yalnızca üst köşeleri yuvarlak dikdörtgen (alt menü zemini).
+struct UstKoseYuvarlak: Shape {
+    var yaricap: CGFloat
+
+    func path(in r: CGRect) -> Path {
+        return Path(UIBezierPath(roundedRect: r, byRoundingCorners: [.topLeft, .topRight],
+                                 cornerRadii: CGSize(width: yaricap, height: yaricap)).cgPath)
+    }
+}
+
 /// dashboard.php — Ana sayfa (sürüm 7 düzeni).
 struct AnaEkran: View {
     @EnvironmentObject var oturum: Oturum
@@ -206,17 +205,13 @@ struct AnaEkran: View {
     var body: some View {
         YenilenebilirKaydirma {
             VStack(alignment: .leading, spacing: 0) {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("Hoş geldin")
-                        .font(.callout)
-                        .foregroundColor(Renk.soluk)
-                    Text("\(oturum.kullanici?.ad ?? "") 👋")
-                        .font(.system(size: 28, weight: .bold))
-                        .foregroundColor(Renk.murekkep)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                }
-                .padding(.horizontal, 22)
+                // Tek satır: "Hoş geldin, Ad 👋" (uzun adlarda yazı küçülür, alt satıra geçmez).
+                Text("Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋")
+                    .font(.system(size: 26, weight: .bold))
+                    .foregroundColor(Renk.murekkep)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.55)
+                    .padding(.horizontal, 22)
                 .padding(.top, 6)
 
                 // Mevzuat arama: dokununca arama sayfası açılır.
@@ -361,8 +356,11 @@ struct AnaEkran: View {
     }
 }
 
-/// Ana sayfa üst çubuğu: lacivert daire içinde amblem, yanında küçük üst etiket ve "Mevzuat Rehberi".
+/// Ana sayfa üst çubuğu: lacivert daire içinde amblem | altın "MEVZUAT REHBERİ" (sürüm 6'daki marka).
+/// Gündüz zemini açık olduğundan altın biraz koyulaştırılır (okunurluk); gece aynı altın.
 struct AnaMarkaEtiketi: View {
+    private static let altin = Color(UIColor.dinamik(0x8C6A1F, 0xDDBF7E))
+
     var body: some View {
         HStack(spacing: 10) {
             Image("AmblemSimge")
@@ -372,17 +370,15 @@ struct AnaMarkaEtiketi: View {
                 .frame(width: 38, height: 38)
                 .background(Circle().fill(Renk.lacivert))
                 .shadow(color: Renk.golge, radius: 6, x: 0, y: 3)
-            VStack(alignment: .leading, spacing: 0) {
-                Text("SU ÜRÜNLERİ VE DENİZCİLİK")
-                    .font(.system(size: 9.5, weight: .heavy))
-                    .kerning(1.4)
-                    .foregroundColor(Renk.ustEtiket)
-                Text("Mevzuat Rehberi")
-                    .font(.system(size: 17, weight: .bold))
-                    .foregroundColor(Renk.murekkep)
-            }
-            .lineLimit(1)
-            .fixedSize()
+            Rectangle()
+                .fill(Renk.cizgi)
+                .frame(width: 1, height: 18)
+            Text("MEVZUAT REHBERİ")
+                .font(.system(size: 13, weight: .semibold))
+                .kerning(2.4)
+                .foregroundColor(AnaMarkaEtiketi.altin)
+                .lineLimit(1)
+                .fixedSize()
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Mevzuat Rehberi")
