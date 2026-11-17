@@ -48,10 +48,10 @@ struct YasalMetinEkrani: View {
                     if let t = veri?.tarih, !t.isEmpty {
                         Text("Son güncelleme: \(t)")
                             .font(.caption.weight(.semibold))
-                            .foregroundColor(.white)
+                            .foregroundColor(Renk.mavi)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 5)
-                            .background(Color.white.opacity(0.14))
+                            .background(Renk.tint)
                             .clipShape(Capsule())
                     }
                 }
@@ -74,7 +74,7 @@ struct YasalMetinEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle(yedekBaslik)
         .markaBasligi()
         .task { if veri == nil { await yukle() } }

@@ -101,13 +101,13 @@ struct BolgeEkrani: View {
                     }
 
                     UyariKutusu(tur: .bilgi, baslik: "Kontrol notu:",
-                                metin: "Bölge ve zaman yasakları il, ilçe, koordinat, tür ve tarih bakımından değişebilir. Denetimde kaydın yerini, tarihini ve mevzuat dayanağını birlikte kontrol et.")
+                                metin: "Bölge ve zaman yasakları il, ilçe, koordinat, tür ve tarih bakımından değişebilir. Kontrolde kaydın yerini, tarihini ve mevzuat dayanağını birlikte doğrula.")
                         .padding(.top, 4)
                 }
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
         .markaBasligi()
     }
@@ -424,7 +424,7 @@ struct BolgeHaritaPenceresi: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Renk.kart)
             }
-            .background(Color(UIColor.dinamik(0x08243A, 0x050E17)).ignoresSafeArea(edges: .top))
+            .background(Renk.ustCubuk.ignoresSafeArea(edges: .top))
             .navigationTitle(baslik)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -76,7 +76,7 @@ struct HesapEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Hesabım")
         .markaBasligi()
         .onAppear {
@@ -131,21 +131,21 @@ struct HesapEkrani: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("@" + (k?.kullaniciAdi ?? ""))
                     .font(.subheadline)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(Renk.soluk)
                 HStack(spacing: 8) {
                     Text(yonetici ? "Yönetici" : "Personel")
                     Circle().fill(aktif ? Color.green : Color.gray).frame(width: 7, height: 7)
                     Text(aktif ? "Aktif" : "Pasif")
                 }
                 .font(.caption.weight(.semibold))
-                .foregroundColor(.white)
+                .foregroundColor(Renk.mavi)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Color.white.opacity(0.14))
+                .background(Renk.tint)
                 .cornerRadius(999)
                 Text(hesap?.sonGiris.map { "Son giriş: " + $0 } ?? "Henüz giriş yapılmadı")
                     .font(.caption)
-                    .foregroundColor(.white.opacity(0.75))
+                    .foregroundColor(Renk.soluk)
             }
         }
         .overlay(

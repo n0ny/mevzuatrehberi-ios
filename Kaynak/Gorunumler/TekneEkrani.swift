@@ -37,7 +37,7 @@ struct TekneEkrani: View {
                 }
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle(sayfa?.baslik ?? "Tekne / Gemi Kontrolü")
         .markaBasligi()
     }

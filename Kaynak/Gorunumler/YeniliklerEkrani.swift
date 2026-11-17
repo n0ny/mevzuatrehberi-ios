@@ -189,7 +189,7 @@ struct YeniliklerEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
         .markaBasligi()
         .onAppear {

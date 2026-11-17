@@ -214,9 +214,9 @@ struct YaptirimEkrani: View {
                                         .font(.subheadline.weight(.semibold))
                                         .padding(.horizontal, 13)
                                         .padding(.vertical, 7)
-                                        .foregroundColor(.white)
-                                        .background(Color.white.opacity(0.14))
-                                        .cornerRadius(999)
+                                        .foregroundColor(Renk.murekkep)
+                                        .background(Capsule().fill(Renk.kart))
+                                        .shadow(color: Renk.golge, radius: 4, x: 0, y: 2)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -271,7 +271,7 @@ struct YaptirimEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
         .markaBasligi()
     }

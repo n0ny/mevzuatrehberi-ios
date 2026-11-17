@@ -68,7 +68,7 @@ struct YenilikYonetimiEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Yenilikler")
         .markaBasligi()
         .task { if veri == nil { await yukle() } }
@@ -294,7 +294,7 @@ struct YenilikFormuEkrani: View {
             }
             .padding(16)
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle(kayit == nil ? "Yenilik ekle" : "Yeniliği düzenle")
         .navigationBarTitleDisplayMode(.inline)
         .alert("Kayıt edilecek ve tüm personele bildirim gönderilecek. Devam edilsin mi?", isPresented: $bildirimSorusu) {

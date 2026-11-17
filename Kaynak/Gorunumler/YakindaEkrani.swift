@@ -87,13 +87,13 @@ struct YakindaEkrani: View {
                     .hidden()
             }
             .background(Renk.zemin.ignoresSafeArea(edges: .bottom))
-            .background(Color(UIColor.dinamik(0x08243A, 0x050E17)).ignoresSafeArea())
+            .background(Renk.ustCubuk.ignoresSafeArea())
             .navigationTitle("Yakında eklenecekler")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Kapat") { kapat() }
-                        .foregroundColor(.white)
+                        .foregroundColor(Renk.mavi)
                 }
             }
         }

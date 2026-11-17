@@ -21,7 +21,7 @@ struct SevkEkrani: View {
                         Text("\(depo.sevkler.count) toplam kayıt")
                     }
                     .font(.footnote)
-                    .foregroundColor(.white.opacity(0.8))
+                    .foregroundColor(Renk.soluk)
                     .padding(.top, 2)
                 }
 
@@ -54,7 +54,7 @@ struct SevkEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
         .markaBasligi()
     }

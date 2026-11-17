@@ -184,7 +184,7 @@ struct SoruSetleriEkrani: View {
                 }
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Haftanın soruları")
         .markaBasligi()
         .onAppear { Task { await yukle() } }
@@ -428,7 +428,7 @@ struct SoruSetiEkrani: View {
                 withAnimation { kaydirici.scrollTo("ust", anchor: .top) }
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Soru seti")
         .markaBasligi()
         .task { if veri == nil { await yukle() } }

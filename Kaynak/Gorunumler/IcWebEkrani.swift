@@ -66,13 +66,13 @@ struct IcWebEkrani: View {
                 }
             }
             // Üst çubuğun arkası lacivert kalsın (sayfa beyaz olsa da başlık okunur).
-            .background(Color(UIColor.dinamik(0x08243A, 0x050E17)).ignoresSafeArea())
+            .background(Renk.ustCubuk.ignoresSafeArea())
             .navigationTitle(sayfa.baslik)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Kapat") { kapat() }
-                        .foregroundColor(.white)
+                        .foregroundColor(Renk.mavi)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 18) {

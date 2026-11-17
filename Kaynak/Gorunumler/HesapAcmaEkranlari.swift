@@ -368,13 +368,13 @@ struct SozlesmeEkrani: View {
                 .padding(18)
             }
             .background(Renk.zemin.ignoresSafeArea(edges: .bottom))
-            .background(Color(UIColor.dinamik(0x08243A, 0x050E17)).ignoresSafeArea())
+            .background(Renk.ustCubuk.ignoresSafeArea())
             .navigationTitle("Kullanıcı Sözleşmesi")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Kapat") { kapat() }
-                        .foregroundColor(.white)
+                        .foregroundColor(Renk.mavi)
                 }
             }
         }

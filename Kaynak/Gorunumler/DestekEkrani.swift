@@ -90,7 +90,7 @@ struct DestekEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Destek paneli")
         .markaBasligi()
         .task { if veri == nil { await yukle() } }
@@ -204,7 +204,7 @@ struct DestekTalepEkrani: View {
             }
             .padding(16)
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Talep")
         .navigationBarTitleDisplayMode(.inline)
         .task { if veri == nil { await yukle() } }

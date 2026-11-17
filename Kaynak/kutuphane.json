@@ -1,0 +1,592 @@
+{
+  "surum": "2026-11-17f",
+  "bolumler": [
+    {
+      "anahtar": "bayraklar",
+      "baslik": "Bayraklar",
+      "durum": "hazir"
+    },
+    {
+      "anahtar": "ses",
+      "baslik": "Ses işaretleri",
+      "durum": "hazir"
+    },
+    {
+      "anahtar": "fenerler",
+      "baslik": "Seyir fenerleri",
+      "durum": "hazir"
+    }
+  ],
+  "bayraklar": {
+    "baslik": "Denizcilik bayrakları",
+    "aciklama": "Uluslararası İşaret Kodu'ndaki tek harfli işaretler. Bayrağa dokunun, anlamı açılsın.",
+    "dayanak": "Uluslararası İşaret Kodu (International Code of Signals, IMO), Tek harfli işaretler",
+    "not": "Türkçe ifadeler Uluslararası İşaret Kodu'nun İngilizce resmî metninin çevirisidir. İşlemlerde resmî metin esas alınmalıdır.",
+    "liste": [
+      {
+        "harf": "A",
+        "ad": "Alfa",
+        "anlam": "Denizin altında dalgıcım var; benden uzak durun ve yavaş geçin."
+      },
+      {
+        "harf": "B",
+        "ad": "Bravo",
+        "anlam": "Tehlikeli yük alıyorum, boşaltıyorum veya taşıyorum."
+      },
+      {
+        "harf": "C",
+        "ad": "Charlie",
+        "anlam": "Evet (olumlu).",
+        "ek": "Önceki işaret grubu olumlu anlamda okunmalıdır."
+      },
+      {
+        "harf": "D",
+        "ad": "Delta",
+        "anlam": "Benden uzak durun; güçlükle manevra yapıyorum."
+      },
+      {
+        "harf": "E",
+        "ad": "Echo",
+        "anlam": "Rotamı sancağa değiştiriyorum."
+      },
+      {
+        "harf": "F",
+        "ad": "Foxtrot",
+        "anlam": "Manevra yapamıyorum (arızalıyım); benimle haberleşin."
+      },
+      {
+        "harf": "G",
+        "ad": "Golf",
+        "anlam": "Kılavuz kaptan istiyorum.",
+        "ek": "Ağlarımı çekiyorum.",
+        "ek_baslik": "Av sahasında birbirine yakın çalışan balıkçı teknelerinde"
+      },
+      {
+        "harf": "H",
+        "ad": "Hotel",
+        "anlam": "Gemimde kılavuz kaptan var."
+      },
+      {
+        "harf": "I",
+        "ad": "India",
+        "anlam": "Rotamı iskeleye değiştiriyorum."
+      },
+      {
+        "harf": "J",
+        "ad": "Juliett",
+        "anlam": "Gemimde yangın var ve tehlikeli yük taşıyorum; benden uzak durun.",
+        "ek": "Ya da: Gemimden tehlikeli yük sızıyor; benden uzak durun."
+      },
+      {
+        "harf": "K",
+        "ad": "Kilo",
+        "anlam": "Sizinle haberleşmek istiyorum."
+      },
+      {
+        "harf": "L",
+        "ad": "Lima",
+        "anlam": "Geminizi derhâl durdurun."
+      },
+      {
+        "harf": "M",
+        "ad": "Mike",
+        "anlam": "Gemim durdu; su üzerinde yolu yok."
+      },
+      {
+        "harf": "N",
+        "ad": "November",
+        "anlam": "Hayır (olumsuz).",
+        "ek": "Önceki işaret grubu olumsuz anlamda okunmalıdır."
+      },
+      {
+        "harf": "O",
+        "ad": "Oscar",
+        "anlam": "Denize adam düştü."
+      },
+      {
+        "harf": "P",
+        "ad": "Papa",
+        "anlam": "Limanda: Gemi denize çıkmak üzere; herkes gemiye dönsün.",
+        "ek": "Ağlarım bir engele takıldı.",
+        "ek_baslik": "Denizde balıkçı teknelerinde"
+      },
+      {
+        "harf": "Q",
+        "ad": "Quebec",
+        "anlam": "Gemim sağlıklıdır; serbest pratika (sağlık izni) istiyorum."
+      },
+      {
+        "harf": "R",
+        "ad": "Romeo",
+        "anlam": "Tek harfli işaret olarak bir anlamı yoktur.",
+        "ek": "Başka harflerle birlikte kod gruplarında kullanılır."
+      },
+      {
+        "harf": "S",
+        "ad": "Sierra",
+        "anlam": "Makinelerim tornistan (geri) çalışıyor."
+      },
+      {
+        "harf": "T",
+        "ad": "Tango",
+        "anlam": "Benden uzak durun; eşli trol avcılığı yapıyorum."
+      },
+      {
+        "harf": "U",
+        "ad": "Uniform",
+        "anlam": "Tehlikeye doğru gidiyorsunuz."
+      },
+      {
+        "harf": "V",
+        "ad": "Victor",
+        "anlam": "Yardıma ihtiyacım var."
+      },
+      {
+        "harf": "W",
+        "ad": "Whiskey",
+        "anlam": "Tıbbi yardıma ihtiyacım var."
+      },
+      {
+        "harf": "X",
+        "ad": "X-ray",
+        "anlam": "Niyetinizi uygulamayı bırakın ve işaretlerimi izleyin."
+      },
+      {
+        "harf": "Y",
+        "ad": "Yankee",
+        "anlam": "Demirim tarıyor."
+      },
+      {
+        "harf": "Z",
+        "ad": "Zulu",
+        "anlam": "Römorkör istiyorum.",
+        "ek": "Ağlarımı denize bırakıyorum.",
+        "ek_baslik": "Av sahasında birbirine yakın çalışan balıkçı teknelerinde"
+      }
+    ],
+    "ozel": [
+      {
+        "kod": "NC",
+        "harfler": [
+          "N",
+          "C"
+        ],
+        "baslik": "November üstte, Charlie altta",
+        "alt": "Uluslararası tehlike işareti",
+        "anlam": "Tehlikedeyim ve acil yardıma ihtiyacım var.",
+        "ek": "Tek bir bayrak değildir: N bayrağı üstte, C bayrağı hemen altında olacak şekilde birlikte çekilir. Ağır ve yakın bir tehlike altında olunduğunu, acil yardım istendiğini bildirir. Gerçek tehlike dışında kullanılmamalıdır.",
+        "dayanak": "Denizde Çatışmayı Önleme Uluslararası Kuralları (COLREG 1972), Ek IV, madde 1(f); Uluslararası İşaret Kodu (IMO)"
+      }
+    ]
+  },
+  "ses": {
+    "baslik": "Ses işaretleri",
+    "aciklama": "Düdük, kampana ve gong işaretleri. İşarete dokunun, anlamı açılsın.",
+    "tanim": [
+      {
+        "desen": "k",
+        "metin": "Kısa düdük: yaklaşık 1 saniye"
+      },
+      {
+        "desen": "u",
+        "metin": "Uzun düdük: 4–6 saniye"
+      }
+    ],
+    "tanim_dayanak": "COLREG 1972 Kural 32",
+    "dayanak": "Denizde Çatışmayı Önleme Uluslararası Kuralları (COLREG 1972), Kural 32–37 ve Ek IV",
+    "not": "Türkçe ifadeler COLREG'in güncel İngilizce resmî metninin çevirisidir; kural ve bent harfleri IMO'nun güncel metnine göredir. Türkiye'de bu kurallar Denizde Çatışmayı Önleme Tüzüğü (7/14561) ile yürürlüğe konulmuştur. İşlemlerde resmî metin esas alınmalıdır.",
+    "gruplar": [
+      {
+        "anahtar": "manevra",
+        "baslik": "Birbirini görürken: manevra ve uyarı",
+        "not": "Bu işaretler tekneler birbirini gözle görürken verilir; kısıtlı görüşte aşağıdaki sis işaretleri kullanılır. 1, 2 ve 3 kısa düdüğü seyirdeki kuvvetle yürütülen tekne, kurallara uygun bir manevra yaparken verir.",
+        "liste": [
+          {
+            "desen": "k",
+            "ad": "1 kısa düdük",
+            "anlam": "Rotamı sancağa değiştiriyorum.",
+            "ek": "Bir çakarlık ışık işaretiyle de desteklenebilir (Kural 34(b)).",
+            "dayanak": "COLREG 1972 Kural 34(a)(i)"
+          },
+          {
+            "desen": "kk",
+            "ad": "2 kısa düdük",
+            "anlam": "Rotamı iskeleye değiştiriyorum.",
+            "ek": "İki çakarlık ışık işaretiyle de desteklenebilir (Kural 34(b)).",
+            "dayanak": "COLREG 1972 Kural 34(a)(ii)"
+          },
+          {
+            "desen": "kkk",
+            "ad": "3 kısa düdük",
+            "anlam": "Tornistan çalışıyorum (makinelerim geri yol veriyor).",
+            "ek": "Üç çakarlık ışık işaretiyle de desteklenebilir (Kural 34(b)).",
+            "dayanak": "COLREG 1972 Kural 34(a)(iii)"
+          },
+          {
+            "desen": "kkkkk",
+            "ad": "En az 5 kısa ve seri düdük",
+            "anlam": "Niyetinizi ya da hareketinizi anlamadım veya çatışmayı önlemek için yeterli önlem aldığınızdan şüpheliyim.",
+            "ek": "Birbirine yaklaşan tekneler arasında kullanılır. En az 5 kısa ve seri çakarlık ışık işaretiyle de desteklenebilir.",
+            "dayanak": "COLREG 1972 Kural 34(d)"
+          },
+          {
+            "desen": "uuk",
+            "ad": "2 uzun + 1 kısa",
+            "anlam": "Sizi sancak tarafınızdan geçmek niyetindeyim.",
+            "ek": "Dar kanal veya geçitte, birbirini görürken, yetişip geçmek isteyen tekne verir.",
+            "dayanak": "COLREG 1972 Kural 34(c)(i)"
+          },
+          {
+            "desen": "uukk",
+            "ad": "2 uzun + 2 kısa",
+            "anlam": "Sizi iskele tarafınızdan geçmek niyetindeyim.",
+            "ek": "Dar kanal veya geçitte, birbirini görürken, yetişip geçmek isteyen tekne verir.",
+            "dayanak": "COLREG 1972 Kural 34(c)(i)"
+          },
+          {
+            "desen": "ukuk",
+            "ad": "1 uzun, 1 kısa, 1 uzun, 1 kısa",
+            "anlam": "Kabul ediyorum: geçilecek tekne geçişe onay veriyor.",
+            "ek": "Dar kanal veya geçitte geçilecek tekne bu sırayla verir. Şüphesi varsa onay yerine en az 5 kısa ve seri düdük çalabilir.",
+            "dayanak": "COLREG 1972 Kural 34(c)(ii)"
+          },
+          {
+            "desen": "u",
+            "ad": "1 uzun düdük (dönemeçte)",
+            "anlam": "Araya giren bir engel nedeniyle diğer teknelerin görünmeyebileceği bir dönemece veya kanal/geçit kesimine yaklaşıyorum.",
+            "ek": "Dönemecin öbür tarafında bu sesi duyan tekne de bir uzun düdükle cevap verir.",
+            "dayanak": "COLREG 1972 Kural 34(e)"
+          }
+        ]
+      },
+      {
+        "anahtar": "sis",
+        "baslik": "Kısıtlı görüşte (sis vb.)",
+        "not": "Görüş kısıtlıyken ya da kısıtlı görüş alanının yakınındayken, gece veya gündüz verilir. Düdük işaretleri en fazla 2 dakikada bir tekrarlanır.",
+        "liste": [
+          {
+            "desen": "u",
+            "ad": "1 uzun düdük",
+            "anlam": "Kuvvetle yürütülen tekne; sudan yol alıyorum.",
+            "ek": "En fazla 2 dakikada bir. Birbirine sabit bağlı iten ve itilen tekne tek birim olduğunda kuvvetle yürütülen tekne sayılır ve aynı işaretleri verir (Kural 35(f)).",
+            "dayanak": "COLREG 1972 Kural 35(a)"
+          },
+          {
+            "desen": "uu",
+            "ad": "2 uzun düdük",
+            "anlam": "Kuvvetle yürütülen tekne; seyirdeyim ama durmuşum, sudan yol almıyorum.",
+            "ek": "En fazla 2 dakikada bir. İki uzun düdük arasında yaklaşık 2 saniye ara bırakılır.",
+            "dayanak": "COLREG 1972 Kural 35(b)"
+          },
+          {
+            "desen": "ukk",
+            "ad": "1 uzun + 2 kısa",
+            "anlam": "Kumanda altında olmayan, manevra kabiliyeti kısıtlı, su çekimi nedeniyle kısıtlı tekne; yelkenli; balıkçılıkla meşgul tekne ya da başka bir tekneyi çeken veya iten tekne.",
+            "ek": "En fazla 2 dakikada bir. Demirliyken balıkçılık yapan tekne ile demirliyken işini yapan manevra kabiliyeti kısıtlı tekne de demirli tekne işareti yerine bunu verir (Kural 35(d)).",
+            "dayanak": "COLREG 1972 Kural 35(c)"
+          },
+          {
+            "desen": "ukkk",
+            "ad": "1 uzun + 3 kısa",
+            "anlam": "Çekilen tekne (birden fazla tekne çekiliyorsa en sondaki); içinde insan varsa.",
+            "ek": "En fazla 2 dakikada bir; mümkünse çeken teknenin işaretinin hemen ardından verilir.",
+            "dayanak": "COLREG 1972 Kural 35(e)"
+          },
+          {
+            "desen": "kkkk",
+            "ad": "4 kısa düdük",
+            "anlam": "Kılavuzluk görevindeki kılavuz teknesinin kimlik işareti.",
+            "ek": "Kural 35(a), (b) veya (g)'deki işaretlere ek olarak verilebilir.",
+            "dayanak": "COLREG 1972 Kural 35(k)"
+          },
+          {
+            "desen": "B",
+            "ad": "Kampana, yaklaşık 5 saniye",
+            "anlam": "Demirliyim.",
+            "ek": "Kampana en fazla 1 dakikada bir, yaklaşık 5 saniye hızlı çalınır. Boyu 100 metre ve üzeri teknede kampana baş tarafta çalınır, hemen ardından kıç tarafta gong yaklaşık 5 saniye hızlı çalınır.",
+            "dayanak": "COLREG 1972 Kural 35(g)"
+          },
+          {
+            "desen": "kuk",
+            "ad": "1 kısa, 1 uzun, 1 kısa",
+            "anlam": "Demirliyim; yaklaşan tekneye mevkiimi ve çatışma ihtimalini bildiriyorum.",
+            "ek": "Demirli tekne kampana işaretine ek olarak verebilir; isteğe bağlıdır.",
+            "dayanak": "COLREG 1972 Kural 35(g)"
+          },
+          {
+            "desen": "vvvBvvv",
+            "ad": "3 vuruş + kampana + 3 vuruş",
+            "anlam": "Karaya oturdum.",
+            "ek": "Demirli teknenin kampana işaretini (gerekiyorsa gong işaretini de) verir; hızlı çalmanın hemen öncesinde ve sonrasında kampanaya 3 ayrı ve belirgin vuruş yapar. Uygun bir düdük işareti de verebilir.",
+            "dayanak": "COLREG 1972 Kural 35(h)"
+          }
+        ],
+        "kucuk_tekne": "Boyu 12–20 metre arası tekneler kampana işaretlerini (Kural 35(g) ve (h)) vermek zorunda değildir; vermezse en fazla 2 dakikada bir başka etkili bir ses işareti verir. Boyu 12 metreden kısa tekneler bu kuraldaki işaretleri vermek zorunda değildir; vermezse en fazla 2 dakikada bir başka etkili bir ses işareti verir (Kural 35(i) ve (j))."
+      },
+      {
+        "anahtar": "tehlike",
+        "baslik": "Dikkat çekme ve tehlike",
+        "liste": [
+          {
+            "desen": "S",
+            "ad": "Sürekli ses",
+            "anlam": "Tehlikedeyim, yardım istiyorum.",
+            "ek": "Herhangi bir sis işareti aletiyle aralıksız ses verilir. Gerçek tehlike dışında kullanılmamalıdır.",
+            "dayanak": "COLREG 1972 Kural 37, Ek IV madde 1(b)",
+            "tehlike": true
+          },
+          {
+            "desen": "P",
+            "ad": "Yaklaşık dakikada bir patlama",
+            "anlam": "Tehlikedeyim, yardım istiyorum.",
+            "ek": "Yaklaşık dakikada bir atılan top veya başka bir patlayıcı işaret. Gerçek tehlike dışında kullanılmamalıdır.",
+            "dayanak": "COLREG 1972 Kural 37, Ek IV madde 1(a)",
+            "tehlike": true
+          },
+          {
+            "desen": "D",
+            "ad": "Dikkat çekme işareti",
+            "anlam": "Başka bir teknenin dikkatini çekmek istiyorum.",
+            "ek": "Her tekne, gerekirse, bu kurallardaki hiçbir işaretle karıştırılmayacak bir ışık veya ses işareti verebilir ya da ışıldağı, hiçbir tekneyi rahatsız etmeyecek şekilde tehlike yönüne tutabilir.",
+            "dayanak": "COLREG 1972 Kural 36"
+          }
+        ]
+      }
+    ]
+  },
+  "fenerler": {
+    "baslik": "Seyir fenerleri ve gündüz işaretleri",
+    "aciklama": "Gece fenerler, gündüz şekiller tekneyi tanıtır. İşarete dokunun, anlamı açılsın.",
+    "tanim": [
+      {
+        "desen": "K",
+        "metin": "Kırmızı"
+      },
+      {
+        "desen": "Y",
+        "metin": "Yeşil"
+      },
+      {
+        "desen": "B",
+        "metin": "Beyaz"
+      },
+      {
+        "desen": "S",
+        "metin": "Sarı"
+      }
+    ],
+    "tanim_not": "Kartlarda tekneyi tanıtan fenerler, üstten alta sırasıyla çizilmiştir. Yan yana çizilen borda fenerleri tekneye baş tarafından bakıldığında görüldüğü gibidir (solda yeşil, sağda kırmızı).",
+    "dayanak": "Denizde Çatışmayı Önleme Uluslararası Kuralları (COLREG 1972), Kural 20–31",
+    "not": "Türkçe ifadeler COLREG'in güncel İngilizce resmî metninin çevirisidir; kural ve bent harfleri IMO'nun güncel metnine göredir. Türkiye'de bu kurallar Denizde Çatışmayı Önleme Tüzüğü (7/14561) ile yürürlüğe konulmuştur. Seyrek durumlar (mayın tarama, deniz uçağı, hava yastıklı tekne vb.) burada yer almaz. İşlemlerde resmî metin esas alınmalıdır.",
+    "gruplar": [
+      {
+        "anahtar": "temel",
+        "baslik": "Fenerler ve görünme açıları",
+        "liste": [
+          {
+            "desen": "B",
+            "ad": "Silyon feneri",
+            "anlam": "Teknenin baş-kıç merkez hattı üzerinde beyaz fener.",
+            "ek": "Pruvadan itibaren her iki bordada kemerenin 22,5° gerisine kadar, toplam 225°'lik kesintisiz bir yayda görünür.",
+            "dayanak": "COLREG 1972 Kural 21(a)"
+          },
+          {
+            "desen": "YK",
+            "ad": "Borda fenerleri",
+            "anlam": "Sancakta yeşil, iskelede kırmızı fener.",
+            "ek": "Her biri pruvadan kendi bordasında kemerenin 22,5° gerisine kadar, 112,5°'lik yayda görünür. Boyu 20 metreden kısa teknede ikisi tek bir fenerde birleştirilebilir.",
+            "dayanak": "COLREG 1972 Kural 21(b)"
+          },
+          {
+            "desen": "B",
+            "ad": "Pupa feneri",
+            "anlam": "Kıça olabildiğince yakın beyaz fener.",
+            "ek": "Tam kıçtan itibaren her iki tarafa 67,5°, toplam 135°'lik yayda görünür.",
+            "dayanak": "COLREG 1972 Kural 21(c)"
+          },
+          {
+            "desen": "S",
+            "ad": "Çekme (yedekleme) feneri",
+            "anlam": "Pupa feneri ile aynı özellikte sarı fener.",
+            "ek": "Kıçtan çeken tekne bunu pupa fenerinin üstünde, aynı dikey hatta gösterir (Kural 24(a)).",
+            "dayanak": "COLREG 1972 Kural 21(d)"
+          }
+        ],
+        "ek_not": "Her yönden görünen fener: ufkun 360°'lik yayında kesintisiz görünür (Kural 21(e)). Çakar fener: dakikada 120 veya daha fazla çakar (Kural 21(f)). En az görünme mesafeleri (Kural 22): boyu 50 metre ve üzeri teknede silyon 6 mil, diğerleri 3 mil; 12–50 metre arası teknede silyon 5 mil (20 metreden kısaysa 3 mil), diğerleri 2 mil; 12 metreden kısa teknede silyon 2 mil, borda fenerleri 1 mil, diğerleri 2 mil."
+      },
+      {
+        "anahtar": "seyir",
+        "baslik": "Seyirdeki tekneler",
+        "liste": [
+          {
+            "desen": "B/YK",
+            "ad": "Beyaz üstte, yeşil ve kırmızı altta",
+            "anlam": "Seyirdeki kuvvetle yürütülen tekne.",
+            "ek": "Silyon feneri, borda fenerleri ve pupa feneri gösterir. Boyu 50 metre ve üzeri teknede, öndekinin gerisinde ve daha yukarıda ikinci bir silyon feneri de bulunur; 50 metreden kısa tekne bunu göstermek zorunda değildir. Boyu 12 metreden kısa tekne bunların yerine her yönden görünen bir beyaz fener ve borda fenerleri gösterebilir (Kural 23(d)).",
+            "dayanak": "COLREG 1972 Kural 23(a)"
+          },
+          {
+            "desen": "YK",
+            "ad": "Yalnız yeşil ve kırmızı (silyon yok)",
+            "anlam": "Seyirdeki yelkenli tekne.",
+            "ek": "Borda fenerleri ve pupa feneri gösterir; silyon feneri yoktur. Boyu 20 metreden kısa yelkenlide bunlar direk başında tek bir fenerde birleştirilebilir. Yelkenli ayrıca direk başında kırmızı üstte, yeşil altta iki her yönden görünen fener gösterebilir (birleşik fenerle birlikte değil). Boyu 7 metreden kısa yelkenli ve kürekli tekne bu fenerleri gösteremiyorsa, çatışmayı önleyecek zamanda gösterilmek üzere hazır bir beyaz fener (el feneri vb.) bulundurur.",
+            "dayanak": "COLREG 1972 Kural 25(a)–(d)"
+          },
+          {
+            "desen": "B/B",
+            "ad": "İki beyaz, dikey",
+            "anlam": "Kıçtan başka bir tekneyi çeken kuvvetle yürütülen tekne.",
+            "ek": "Öndeki silyon feneri yerine dikey hatta iki silyon feneri gösterir; çekilen katarın boyu (çekenin kıçından katarın sonuna) 200 metreyi aşarsa üç silyon feneri gösterir. Ayrıca borda fenerleri, pupa feneri ve pupa fenerinin üstünde sarı çekme feneri gösterir. Katar 200 metreyi aşarsa gündüz bir elmas şekli gösterir.",
+            "dayanak": "COLREG 1972 Kural 24(a)"
+          }
+        ]
+      },
+      {
+        "anahtar": "balikci",
+        "baslik": "Balıkçılar",
+        "not": "Balıkçılıkla meşgul tekne, seyirde veya demirde, yalnızca bu kuralda yazılı fener ve şekilleri gösterir. Balıkçılık yapmıyorken bu fenerleri göstermez; boyuna uygun tekne fenerlerini gösterir (Kural 26(e)).",
+        "liste": [
+          {
+            "desen": "Y/B",
+            "ad": "Yeşil üstte, beyaz altta",
+            "anlam": "Trolle balıkçılık yapan tekne.",
+            "ek": "Her yönden görünen iki fener, dikey hatta. Yeşil fenerin gerisinde ve daha yukarıda bir silyon feneri de gösterir; boyu 50 metreden kısa tekne bunu göstermek zorunda değildir. Yol alırken ayrıca borda ve pupa fenerlerini gösterir. Gündüz: uç uca iki koni.",
+            "dayanak": "COLREG 1972 Kural 26(b)"
+          },
+          {
+            "desen": "K/B",
+            "ad": "Kırmızı üstte, beyaz altta",
+            "anlam": "Trol dışında bir yöntemle balıkçılık yapan tekne.",
+            "ek": "Her yönden görünen iki fener, dikey hatta. Ağ veya takım tekneden yatay olarak 150 metreden fazla uzanıyorsa, takım yönünde her yönden görünen bir beyaz fener (gündüz: sivri ucu yukarıda bir koni) gösterir. Yol alırken ayrıca borda ve pupa fenerlerini gösterir. Gündüz: uç uca iki koni.",
+            "dayanak": "COLREG 1972 Kural 26(c)"
+          }
+        ]
+      },
+      {
+        "anahtar": "ozel",
+        "baslik": "Özel durumdaki tekneler",
+        "liste": [
+          {
+            "desen": "K/K",
+            "ad": "İki kırmızı, dikey",
+            "anlam": "Kumanda altında olmayan tekne.",
+            "ek": "Her yönden görünen iki kırmızı fener, dikey hatta. Yol alırken ayrıca borda ve pupa fenerlerini gösterir. Gündüz: dikey hatta iki daire.",
+            "dayanak": "COLREG 1972 Kural 27(a)"
+          },
+          {
+            "desen": "K/B/K",
+            "ad": "Kırmızı, beyaz, kırmızı",
+            "anlam": "Manevra kabiliyeti kısıtlı tekne.",
+            "ek": "Her yönden görünen üç fener, dikey hatta: üstte ve altta kırmızı, ortada beyaz. Yol alırken ayrıca silyon feneri (veya fenerleri), borda ve pupa fenerlerini gösterir. Demirliyken bunlara ek olarak demir fenerlerini gösterir. Gündüz: daire, elmas, daire.",
+            "dayanak": "COLREG 1972 Kural 27(b)"
+          },
+          {
+            "desen": "KY/KY",
+            "ad": "İki kırmızı ve iki yeşil",
+            "anlam": "Tarama veya sualtı çalışması yapan, engel oluşturan tekne.",
+            "ek": "Manevra kabiliyeti kısıtlı tekne fenerlerine ek olarak: engelin bulunduğu tarafta dikey hatta iki kırmızı, diğer teknelerin geçebileceği tarafta dikey hatta iki yeşil fener (gündüz: engel tarafında iki daire, geçiş tarafında iki elmas). Demirliyken demir fenerleri yerine bunları gösterir.",
+            "dayanak": "COLREG 1972 Kural 27(d)"
+          },
+          {
+            "desen": "K/K/K",
+            "ad": "Üç kırmızı, dikey",
+            "anlam": "Su çekimi nedeniyle kısıtlı tekne.",
+            "ek": "Kuvvetle yürütülen tekne fenerlerine ek olarak, dikey hatta üç her yönden görünen kırmızı fener gösterebilir. Gündüz: silindir.",
+            "dayanak": "COLREG 1972 Kural 28"
+          },
+          {
+            "desen": "B/K",
+            "ad": "Beyaz üstte, kırmızı altta",
+            "anlam": "Kılavuzluk görevindeki kılavuz teknesi.",
+            "ek": "Direk başında veya yakınında, dikey hatta iki her yönden görünen fener. Seyirdeyken ayrıca borda ve pupa fenerlerini, demirliyken demir fenerlerini gösterir. Görevde değilse boyuna uygun tekne fenerlerini gösterir.",
+            "dayanak": "COLREG 1972 Kural 29"
+          }
+        ]
+      },
+      {
+        "anahtar": "demir",
+        "baslik": "Demirli ve karaya oturmuş",
+        "liste": [
+          {
+            "desen": "B./.B",
+            "ad": "Önde beyaz, kıçta daha alçak beyaz",
+            "anlam": "Demirli tekne.",
+            "ek": "Baş tarafta her yönden görünen bir beyaz fener; kıçta veya kıça yakın, ondan daha alçakta bir beyaz fener. Boyu 50 metreden kısa tekne bunların yerine tek bir beyaz fener gösterebilir. Boyu 100 metre ve üzeri tekne güverte aydınlatma fenerlerini de yakmak zorundadır. Gündüz: baş tarafta bir daire. Boyu 7 metreden kısa tekne; dar kanal, geçit, demirleme yeri veya diğer teknelerin seyrettiği yerde ya da yakınında değilse bunları göstermek zorunda değildir.",
+            "dayanak": "COLREG 1972 Kural 30(a)–(c), (e)"
+          },
+          {
+            "desen": "K/K",
+            "ad": "Demir fenerleri + iki kırmızı",
+            "anlam": "Karaya oturmuş tekne.",
+            "ek": "Demir fenerlerine ek olarak dikey hatta iki her yönden görünen kırmızı fener gösterir. Gündüz: dikey hatta üç daire. Boyu 12 metreden kısa tekne karaya oturduğunda iki kırmızı feneri ve üç daireyi göstermek zorunda değildir.",
+            "dayanak": "COLREG 1972 Kural 30(d), (f)"
+          }
+        ]
+      },
+      {
+        "anahtar": "gunduz",
+        "baslik": "Gündüz işaretleri (şekiller)",
+        "not": "Şekiller siyah renktedir (COLREG Ek I). Gece fenerleri yerine gündüz gösterilir. Kural metninde \"daire\" şekli \"top\" (ball, küre) olarak geçer.",
+        "liste": [
+          {
+            "desen": "o",
+            "ad": "Bir daire",
+            "anlam": "Demirli tekne.",
+            "ek": "Baş tarafta gösterilir.",
+            "dayanak": "COLREG 1972 Kural 30(a)"
+          },
+          {
+            "desen": "o/o",
+            "ad": "İki daire, dikey",
+            "anlam": "Kumanda altında olmayan tekne.",
+            "dayanak": "COLREG 1972 Kural 27(a)"
+          },
+          {
+            "desen": "o/o/o",
+            "ad": "Üç daire, dikey",
+            "anlam": "Karaya oturmuş tekne.",
+            "dayanak": "COLREG 1972 Kural 30(d)"
+          },
+          {
+            "desen": "o/d/o",
+            "ad": "Daire, elmas, daire",
+            "anlam": "Manevra kabiliyeti kısıtlı tekne.",
+            "dayanak": "COLREG 1972 Kural 27(b)"
+          },
+          {
+            "desen": "V/A",
+            "ad": "Uç uca iki koni",
+            "anlam": "Balıkçılıkla meşgul tekne (trol veya diğer).",
+            "dayanak": "COLREG 1972 Kural 26(b), (c)"
+          },
+          {
+            "desen": "A",
+            "ad": "Sivri ucu yukarıda koni",
+            "anlam": "Balıkçının ağı veya takımı yatay olarak 150 metreden fazla uzanıyor; koni takım yönünde gösterilir.",
+            "dayanak": "COLREG 1972 Kural 26(c)"
+          },
+          {
+            "desen": "V",
+            "ad": "Sivri ucu aşağıda koni",
+            "anlam": "Yelkenle seyrederken makineyle de yol alan tekne.",
+            "ek": "Baş tarafta, en iyi görülebilecek yerde gösterilir.",
+            "dayanak": "COLREG 1972 Kural 25(e)"
+          },
+          {
+            "desen": "C",
+            "ad": "Silindir",
+            "anlam": "Su çekimi nedeniyle kısıtlı tekne.",
+            "dayanak": "COLREG 1972 Kural 28"
+          },
+          {
+            "desen": "d",
+            "ad": "Elmas",
+            "anlam": "Çekilen katarın boyu 200 metreyi aşıyor.",
+            "ek": "Çeken tekne gösterir.",
+            "dayanak": "COLREG 1972 Kural 24(a)"
+          }
+        ]
+      }
+    ]
+  }
+}

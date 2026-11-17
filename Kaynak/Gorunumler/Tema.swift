@@ -16,6 +16,15 @@ extension UIColor {
             ozellik.userInterfaceStyle == .dark ? UIColor(onaltilik: koyu) : UIColor(onaltilik: acik)
         }
     }
+
+    /// Saydamlığı da gündüz/gece farklı olan renk (gölgeler için).
+    static func dinamik(_ acik: UInt32, _ acikAlfa: CGFloat, _ koyu: UInt32, _ koyuAlfa: CGFloat) -> UIColor {
+        return UIColor { ozellik in
+            ozellik.userInterfaceStyle == .dark
+                ? UIColor(onaltilik: koyu).withAlphaComponent(koyuAlfa)
+                : UIColor(onaltilik: acik).withAlphaComponent(acikAlfa)
+        }
+    }
 }
 
 enum Renk {
@@ -37,49 +46,76 @@ enum Renk {
     /// Ana sayfa üst alanındaki "MEVZUAT REHBERİ" etiketi (yumuşak altın).
     static let altin = Color(UIColor(onaltilik: 0xDDBF7E))
 
+    // MARK: Sürüm 7 görünümü (17.11.2026): açık deniz zemini, yumuşak kartlar, yüzen alt menü
+
+    /// Koyu düğme / seçili sekme zemini (gündüz lacivert, gece daha açık lacivert).
+    static let dugme = Color(UIColor.dinamik(0x0B2E4A, 0x28507A))
+    /// Üst etiketler ("MEVZUAT REHBERİ") ve vurgu.
+    static let ustEtiket = Color(UIColor.dinamik(0x0B6FB8, 0x7FB4EA))
+    /// Kart gölgesi.
+    static let golge = Color(UIColor.dinamik(0x0B2E4A, 0.08, 0x000000, 0.35))
+    /// Sayfanın en üstü (sayfa zemininin başladığı renk); açılır pencerelerde üst çubuk arkası.
+    static let ustCubuk = Color(UIColor.dinamik(0xFFFFFF, 0x07111B))
+    /// Sayfa zemini renk geçişi (üstten alta).
+    static let denizAcik = [UIColor(onaltilik: 0xFFFFFF), UIColor(onaltilik: 0xF4FBFD),
+                            UIColor(onaltilik: 0xD9F0F5), UIColor(onaltilik: 0xB7E3EC)]
+    static let denizKoyu = [UIColor(onaltilik: 0x07111B), UIColor(onaltilik: 0x0A1826),
+                            UIColor(onaltilik: 0x0C2433), UIColor(onaltilik: 0x0E3240)]
+
     static let kahramanAcik = [UIColor(onaltilik: 0x08243A), UIColor(onaltilik: 0x0B2E4A), UIColor(onaltilik: 0x11456B)]
     static let kahramanKoyu = [UIColor(onaltilik: 0x050E17), UIColor(onaltilik: 0x08223A), UIColor(onaltilik: 0x0D3556)]
 
-    /// Gezinme çubuğu: sayfanın en üstündeyken saydam (lacivert üst alanla tek parça görünür),
-    /// sayfa kaydırılınca lacivert zemin gelir.
+    /// Gezinme çubuğu: sayfanın en üstündeyken saydam (açık deniz zemini görünür),
+    /// sayfa kaydırılınca buzlu cam zemin gelir. Yazılar ve düğmeler lacivert (gecede açık).
     static func gezinmeCubugunuAyarla() {
+        let yazi = UIColor.dinamik(0x0B2E4A, 0xE3EAF1)
+
         let dolu = UINavigationBarAppearance()
-        dolu.configureWithOpaqueBackground()
-        dolu.backgroundColor = UIColor.dinamik(0x08243A, 0x050E17)
+        dolu.configureWithDefaultBackground()
+        dolu.backgroundEffect = UIBlurEffect(style: .systemThinMaterial)
+        dolu.backgroundColor = UIColor.dinamik(0xFFFFFF, 0.55, 0x07111B, 0.55)
         dolu.shadowColor = .clear
-        dolu.titleTextAttributes = [.foregroundColor: UIColor.white]
-        dolu.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+        dolu.titleTextAttributes = [.foregroundColor: yazi]
+        dolu.largeTitleTextAttributes = [.foregroundColor: yazi]
 
         let saydam = UINavigationBarAppearance()
         saydam.configureWithTransparentBackground()
-        saydam.titleTextAttributes = [.foregroundColor: UIColor.white]
-        saydam.largeTitleTextAttributes = [.foregroundColor: UIColor.white]
+        saydam.titleTextAttributes = [.foregroundColor: yazi]
+        saydam.largeTitleTextAttributes = [.foregroundColor: yazi]
 
         let cubuk = UINavigationBar.appearance()
         cubuk.standardAppearance = dolu
         cubuk.compactAppearance = dolu
         cubuk.scrollEdgeAppearance = saydam
-        cubuk.tintColor = .white
+        cubuk.tintColor = yazi
     }
 
-    /// Alttaki sekme çubuğu: kart rengi zemin, seçili sekme lacivert (gecede açık mavi).
+    /// Sistemin alt sekme çubuğu gizlenir; yerine yüzen sekme çubuğu (YuzenSekmeCubugu) çizilir.
     static func sekmeCubugunuAyarla() {
-        let gorunum = UITabBarAppearance()
-        gorunum.configureWithOpaqueBackground()
-        gorunum.backgroundColor = UIColor.dinamik(0xFFFFFF, 0x0F1B27)
-        let secili = UIColor.dinamik(0x0B2E4A, 0x7FB4EA)
-        let normal = UIColor.dinamik(0x8A99A8, 0x6F8396)
-        for duzen in [gorunum.stackedLayoutAppearance, gorunum.inlineLayoutAppearance, gorunum.compactInlineLayoutAppearance] {
-            duzen.selected.iconColor = secili
-            duzen.selected.titleTextAttributes = [.foregroundColor: secili]
-            duzen.normal.iconColor = normal
-            duzen.normal.titleTextAttributes = [.foregroundColor: normal]
-        }
-        let cubuk = UITabBar.appearance()
-        cubuk.standardAppearance = gorunum
-        if #available(iOS 15.0, *) {
-            cubuk.scrollEdgeAppearance = gorunum
-        }
+        UITabBar.appearance().isHidden = true
+    }
+}
+
+/// Durum çubuğu (saat, pil) rengi. Uygulamanın geneli açık zemin olduğundan sistem varsayılanı
+/// (gündüz koyu, gece açık yazı) kullanılır; yalnızca koyu fotoğraflı giriş ekranında beyaz yapılır.
+enum DurumCubugu {
+    static func ayarla(acik: Bool) {
+        // Info.plist'te UIViewControllerBasedStatusBarAppearance = NO olduğu için uygulama geneli ayar kullanılır.
+        // Eski (kullanımdan kalkmış) ayarlayıcı derleme uyarısı vermesin diye KVC ile çağrılır; yoksa hiçbir şey yapılmaz.
+        let uygulama = UIApplication.shared
+        guard uygulama.responds(to: Selector(("setStatusBarStyle:"))) else { return }
+        let stil: UIStatusBarStyle = acik ? .lightContent : .default
+        uygulama.setValue(stil.rawValue, forKey: "statusBarStyle")
+    }
+}
+
+/// Sayfa zemini: gündüz beyazdan açık turkuaza, gece koyu lacivertten koyu deniz rengine geçiş.
+struct DenizZemini: View {
+    @Environment(\.colorScheme) private var sema
+
+    var body: some View {
+        LinearGradient(gradient: Gradient(colors: (sema == .dark ? Renk.denizKoyu : Renk.denizAcik).map { Color($0) }),
+                       startPoint: .top, endPoint: .bottom)
     }
 }
 
@@ -97,7 +133,7 @@ struct MarkaBasligi: ViewModifier {
                             .frame(width: 28, height: 28)
                         Text("Mevzuat Rehberi")
                             .font(.headline)
-                            .foregroundColor(.white)
+                            .foregroundColor(Renk.murekkep)
                     }
                 }
             }
@@ -110,18 +146,18 @@ extension View {
     }
 }
 
-/// Sitedeki "hero": lacivert geçişli üst alan, büyük başlık ve açıklama.
+/// Sayfa başlığı (sürüm 7): açık zemin üzerinde büyük lacivert başlık ve açıklama.
+/// Zemin sayfanın kendi deniz zeminidir (DenizZemini); bu alanın ayrı bir rengi yoktur.
 struct Kahraman<Icerik: View>: View {
     let baslik: String
     let aciklama: String?
     /// true: başlık tek satıra sığdırılır (uzun isimlerde yazı küçülür).
     let tekSatir: Bool
-    /// Verilmezse tek satırda 26, çok satırda 30 punto.
+    /// Verilmezse tek satırda 26, çok satırda 28 punto.
     let baslikBoyutu: CGFloat?
     let ustBosluk: CGFloat
     let altBosluk: CGFloat
     let icerik: Icerik
-    @Environment(\.colorScheme) private var sema
 
     init(baslik: String, aciklama: String? = nil, tekSatir: Bool = false,
          baslikBoyutu: CGFloat? = nil, ustBosluk: CGFloat = 8, altBosluk: CGFloat = 24,
@@ -136,48 +172,31 @@ struct Kahraman<Icerik: View>: View {
     }
 
     var body: some View {
-        let renkler = (sema == .dark ? Renk.kahramanKoyu : Renk.kahramanAcik).map { Color($0) }
         VStack(alignment: .leading, spacing: 10) {
             if tekSatir {
                 Text(baslik)
-                    .font(.system(size: baslikBoyutu ?? 26, weight: .bold, design: .serif))
-                    .foregroundColor(.white)
+                    .font(.system(size: baslikBoyutu ?? 26, weight: .bold))
+                    .foregroundColor(Renk.murekkep)
                     .lineLimit(1)
                     .minimumScaleFactor(0.5)
             } else {
                 Text(baslik)
-                    .font(.system(size: baslikBoyutu ?? 30, weight: .bold, design: .serif))
-                    .foregroundColor(.white)
+                    .font(.system(size: baslikBoyutu ?? 28, weight: .bold))
+                    .foregroundColor(Renk.murekkep)
                     .fixedSize(horizontal: false, vertical: true)
             }
             if let a = aciklama {
                 Text(a)
                     .font(.callout)
-                    .foregroundColor(.white.opacity(0.82))
+                    .foregroundColor(Renk.soluk)
                     .fixedSize(horizontal: false, vertical: true)
             }
             icerik
         }
-        .padding(.horizontal, 18)
+        .padding(.horizontal, 20)
         .padding(.top, ustBosluk)
-        .padding(.bottom, altBosluk)
+        .padding(.bottom, max(altBosluk - 8, 8))
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            // Üst çubuk ve aşağı çekme boşluğu da aynı lacivertle dolsun diye zemin yukarı uzatılır.
-            // Renk geçişi, saat ve üst çubuğun arkasından (yaklaşık 110 nk yukarıdan) başlar;
-            // böylece üst çubuk ile bu alan arasında ek yeri görünmez.
-            VStack(spacing: 0) {
-                renkler[0].frame(height: 1200 - 110)
-                LinearGradient(gradient: Gradient(colors: renkler), startPoint: .top, endPoint: .bottom)
-                    .overlay(
-                        RadialGradient(gradient: Gradient(colors: [Color(red: 74 / 255, green: 168 / 255, blue: 237 / 255).opacity(0.28),
-                                                                   Color.clear]),
-                                       center: .topTrailing, startRadius: 0, endRadius: 260)
-                    )
-            }
-            .padding(.top, -1200),
-            alignment: .bottom
-        )
     }
 }
 
@@ -197,7 +216,7 @@ struct AramaKutusu: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(Renk.soluk)
+                .foregroundColor(Renk.ustEtiket)
             TextField(ipucu, text: $metin)
                 .textInputAutocapitalization(.never)
                 .disableAutocorrection(true)
@@ -212,25 +231,31 @@ struct AramaKutusu: View {
                 .buttonStyle(.borderless)
             }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 13)
-        .background(Renk.kart)
-        .cornerRadius(14)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 14)
+        .background(Capsule().fill(Renk.kart))
+        .shadow(color: Renk.golge, radius: 10, x: 0, y: 5)
         .padding(.top, 6)
     }
 }
 
-/// Sitedeki beyaz kart görünümü.
+/// Kart görünümü (sürüm 7): yuvarlak köşe, çizgi yerine yumuşak gölge. Vurgulu kartta ince mavi çerçeve.
 struct KartStili: ViewModifier {
     var vurgulu = false
 
     func body(content: Content) -> some View {
         content
             .background(Renk.kart)
-            .cornerRadius(16)
+            // İçerik (ör. fotoğraf) köşelerden taşmasın; gölge kırpılmasın diye ayrı bir şekilde verilir.
+            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(
-                RoundedRectangle(cornerRadius: 16)
-                    .stroke(vurgulu ? Renk.mavi.opacity(0.45) : Renk.cizgi, lineWidth: 1)
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(vurgulu ? Renk.mavi.opacity(0.45) : Color.clear, lineWidth: 1)
+            )
+            .background(
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Renk.kart)
+                    .shadow(color: Renk.golge, radius: 9, x: 0, y: 5)
             )
     }
 }
@@ -512,8 +537,8 @@ private struct YenilemeBaglayici: UIViewRepresentable {
                     return
                 }
                 let kontrol = UIRefreshControl()
-                kontrol.tintColor = .white
-                // Lacivert üst alanın önünde görünsün.
+                kontrol.tintColor = UIColor.dinamik(0x0B2E4A, 0xE3EAF1)
+                // Üst alanın önünde görünsün.
                 kontrol.layer.zPosition = 10
                 kontrol.addTarget(k, action: #selector(Koordinator.yenile(_:)), for: .valueChanged)
                 kaydirma.alwaysBounceVertical = true

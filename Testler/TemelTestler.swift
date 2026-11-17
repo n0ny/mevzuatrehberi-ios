@@ -143,6 +143,24 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(tck.first?.aciklama, k.genelAciklama)
     }
 
+    /// Türkçe harf duyarsız arama (sitedeki mevzuat.php, 17.11.2026).
+    func testTurkceHarfDuyarsizArama() {
+        XCTAssertEqual(TRMetin.harfKatla("MÜHÜRSÜZ Trol AĞI ıŞık"), "muhursuz trol agi isik")
+        let sevk = [
+            AramaKaydi(kaynak: .sevk, id: "1258", fiil: "MARMARA DENIZINDE MUHURSUZ TROL AGI ILE AVCILIK", mevzuat: "1380 24.MADDE"),
+            AramaKaydi(kaynak: .sevk, id: "901", fiil: "MÜHÜRSÜZ AĞ BULUNDURMAK", mevzuat: "1380 23.MADDE"),
+        ]
+        let v5 = [AramaKaydi(kaynak: .v5, id: "v1", fiil: "CAN YELEĞİ BULUNDURMAMAK", mevzuat: "Özel Tekneler Yönetmeliği")]
+        let motor = MevzuatAramaMotoru(eski: [], v5: v5, sevk: sevk)
+        XCTAssertEqual(Set(motor.ara("mühürsüz").map { $0.id }), ["1258", "901"])
+        XCTAssertEqual(Set(motor.ara("muhursuz").map { $0.id }), ["1258", "901"])
+        XCTAssertEqual(motor.ara("can yelegi").map { $0.id }, ["v1"])
+        XCTAssertEqual(motor.ara("can yeleği").map { $0.id }, ["v1"])
+        XCTAssertEqual(motor.ara("yelek").map { $0.id }, ["v1"])
+        // Ekranda gösterilen metin değişmez
+        XCTAssertEqual(motor.ara("muhursuz").first(where: { $0.id == "901" })?.fiil, "MÜHÜRSÜZ AĞ BULUNDURMAK")
+    }
+
     func testAyniFiilTekKart() {
         XCTAssertEqual(MevzuatAramaMotoru.katla("MİDYE avcılığı."), MevzuatAramaMotoru.katla("MIDYE AVCILIGI"))
         XCTAssertGreaterThan(MevzuatAramaMotoru.yaziPuani("MİDYE AVCILIĞI"), MevzuatAramaMotoru.yaziPuani("MIDYE AVCILIGI"))

@@ -6,6 +6,8 @@ struct MevzuatRehberiApp: App {
     @StateObject private var oturum = Oturum()
     @StateObject private var depo = VeriDeposu()
     @StateObject private var foto = ProfilFotografi.paylasilan
+    /// Bilgi Kütüphanesi içeriği (api/kutuphane.json).
+    @StateObject private var kutuphane = KutuphaneDeposu.paylasilan
 
     init() {
         // Tür fotoğrafları internetsizken de görünsün diye önbellek büyütülür.
@@ -24,6 +26,7 @@ struct MevzuatRehberiApp: App {
                 .environmentObject(oturum)
                 .environmentObject(depo)
                 .environmentObject(foto)
+                .environmentObject(kutuphane)
         }
     }
 }

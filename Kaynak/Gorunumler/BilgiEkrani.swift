@@ -131,7 +131,7 @@ struct BilgiEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Haftanın soruları")
         .markaBasligi()
         .task { if veri == nil { await yukle() } }
@@ -159,10 +159,10 @@ struct BilgiEkrani: View {
     private func istatistik(_ deger: String, _ etiket: String, vurgu: Bool = false) -> some View {
         (Text(deger).bold() + Text(" " + etiket))
             .font(.caption)
-            .foregroundColor(.white)
+            .foregroundColor(vurgu ? .white : Renk.mavi)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(Color.white.opacity(vurgu ? 0.22 : 0.14))
+            .background(vurgu ? Renk.dugme : Renk.tint)
             .cornerRadius(999)
     }
 

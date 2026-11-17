@@ -53,7 +53,7 @@ struct OneriEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Öneri & Geri Bildirim")
         .markaBasligi()
         .task { await epostaYukle(zorla: false) }

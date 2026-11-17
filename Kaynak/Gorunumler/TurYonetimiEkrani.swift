@@ -113,7 +113,7 @@ struct TurYonetimiEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Tür kartları")
         .markaBasligi()
         .task { if veri == nil { await yukle() } }
@@ -430,7 +430,7 @@ struct TurFormuEkrani: View {
             }
             .padding(16)
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle(tur.map { $0.ad + " — düzenle" } ?? "Tür ekle")
         .navigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $fotoSecici) {
@@ -654,7 +654,7 @@ struct FotoBulEkrani: View {
             }
             .padding(16)
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Fotoğrafları otomatik bul")
         .navigationBarTitleDisplayMode(.inline)
         .onDisappear { durdur = true }

@@ -25,10 +25,10 @@ struct TurlerEkrani: View {
                     if !sirali.isEmpty {
                         (Text("\(sirali.count)").bold() + Text(" tür"))
                             .font(.footnote)
-                            .foregroundColor(.white)
+                            .foregroundColor(Renk.mavi)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
-                            .background(Color.white.opacity(0.14))
+                            .background(Renk.tint)
                             .cornerRadius(999)
                     }
                 }
@@ -38,7 +38,6 @@ struct TurlerEkrani: View {
                         BosKutu(metin: "Henüz tür kartı eklenmedi.")
                     } else {
                         AramaKutusu(ipucu: "Tür adı ara (ör. hamsi, lüfer)", metin: $sorgu)
-                            .overlay(RoundedRectangle(cornerRadius: 14).stroke(Renk.cizgi, lineWidth: 1).padding(.top, 6))
                         if gruplar.count > 1 {
                             ScrollView(.horizontal, showsIndicators: false) {
                                 HStack(spacing: 8) {
@@ -64,7 +63,7 @@ struct TurlerEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
         .markaBasligi()
         .fullScreenCover(item: $buyuk) { t in
@@ -109,7 +108,7 @@ struct GrupCipi: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .foregroundColor(secili ? .white : Renk.murekkep)
-                .background(secili ? Renk.lacivert : Renk.kart)
+                .background(secili ? Renk.dugme : Renk.kart)
                 .cornerRadius(999)
                 .overlay(RoundedRectangle(cornerRadius: 999).stroke(secili ? Color.clear : Renk.cizgi, lineWidth: 1))
         }

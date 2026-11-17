@@ -26,9 +26,9 @@ struct AramaEkrani: View {
                                         .font(.subheadline.weight(.semibold))
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 7)
-                                        .foregroundColor(filtre == f ? Renk.lacivert : .white)
-                                        .background(filtre == f ? Color.white : Color.white.opacity(0.14))
-                                        .cornerRadius(999)
+                                        .foregroundColor(filtre == f ? .white : Renk.murekkep)
+                                        .background(Capsule().fill(filtre == f ? Renk.dugme : Renk.kart))
+                                        .shadow(color: Renk.golge, radius: 4, x: 0, y: 2)
                                 }
                                 .buttonStyle(.plain)
                             }
@@ -45,7 +45,7 @@ struct AramaEkrani: View {
                 .padding(16)
             }
         }
-        .background(Renk.zemin.ignoresSafeArea())
+        .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Mevzuat Rehberi")
         .markaBasligi()
         .onChange(of: sorgu) { _ in aramayiPlanla() }

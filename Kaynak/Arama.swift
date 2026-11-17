@@ -14,6 +14,15 @@ enum TRMetin {
         return kucuk.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
     }
 
+    /// mevzuat.php $harfKatla (17.11.2026): normal + Türkçe harfler sadeleşir
+    /// (ı/i, ş/s, ğ/g, ü/u, ö/o, ç/c, â/a, î/i, û/u). "mühürsüz" ile "MUHURSUZ" eşleşir.
+    /// Yalnızca eşleştirmede kullanılır; ekranda gösterilen metin değişmez.
+    static func harfKatla(_ s: String) -> String {
+        let degisim: [Character: Character] = ["ı": "i", "ş": "s", "ğ": "g", "ü": "u", "ö": "o", "ç": "c",
+                                               "â": "a", "î": "i", "û": "u"]
+        return String(normal(s).map { degisim[$0] ?? $0 })
+    }
+
     private static func harfVeyaRakam(_ u: Unicode.Scalar) -> Bool {
         switch u.properties.generalCategory {
         case .uppercaseLetter, .lowercaseLetter, .titlecaseLetter, .modifierLetter, .otherLetter,
@@ -136,6 +145,9 @@ struct AramaKaydi: Identifiable {
     let dayanaklar: [String]
     let fiilNormal: String
     let fiilKelimeleri: [String]
+    /// Türkçe harfleri sadeleşmiş hâlleri (arama eşleştirmesi ve sıralama için).
+    let fiilKatli: String
+    let fiilKelimeleriKatli: [String]
 
     init(kaynak: Kaynak, id: String, fiil: String, mevzuat: String, madde: String = "", bent: String = "",
          aciklama: String = "", kapsam: String = "", kaynakMetni: String = "", etiket: String = "",
@@ -154,6 +166,9 @@ struct AramaKaydi: Identifiable {
         let n = TRMetin.normal(fiil)
         self.fiilNormal = n
         self.fiilKelimeleri = TRMetin.kelimeler(n)
+        let k = TRMetin.harfKatla(fiil)
+        self.fiilKatli = k
+        self.fiilKelimeleriKatli = TRMetin.kelimeler(k)
     }
 
     var sevkMi: Bool { return kaynak == .sevk }
@@ -174,7 +189,8 @@ struct MevzuatAramaMotoru {
 
     static let bos = MevzuatAramaMotoru(eski: [], v5: [], sevk: [])
 
-    private static let yumusama: [Unicode.Scalar: Unicode.Scalar] = ["k": "ğ", "p": "b", "t": "d", "ç": "c"]
+    /// Ünsüz yumuşaması (yelek → yeleği). Katlanmış metinde ğ yerine g olduğundan ikisi de denenir.
+    private static let yumusama: [Unicode.Scalar: [Unicode.Scalar]] = ["k": ["ğ", "g"], "p": ["b"], "t": ["d"], "ç": ["c"]]
 
     /// $matchesQuery
     static func eslesir(kelimeler words: [String], sorgu q: String, parcalar tokens: [String]) -> Bool {
@@ -189,19 +205,21 @@ struct MevzuatAramaMotoru {
         for token in tokens {
             var bulundu = false
             let uzunluk = TRMetin.uzunluk(token)
-            var yumusak: String? = nil
-            if uzunluk >= 3, let son = token.unicodeScalars.last, let y = yumusama[son] {
-                var govde = token.unicodeScalars
-                govde.removeLast()
-                govde.append(y)
-                yumusak = String(govde)
+            var yumusaklar: [String] = []
+            if uzunluk >= 3, let son = token.unicodeScalars.last, let ylar = yumusama[son] {
+                for y in ylar {
+                    var govde = token.unicodeScalars
+                    govde.removeLast()
+                    govde.append(y)
+                    yumusaklar.append(String(govde))
+                }
             }
             for w in words {
                 if w == token || TRMetin.basliyor(w, token) {
                     bulundu = true
                     break
                 }
-                if let y = yumusak, TRMetin.basliyor(w, y) {
+                if yumusaklar.contains(where: { TRMetin.basliyor(w, $0) }) {
                     bulundu = true
                     break
                 }
@@ -244,26 +262,31 @@ struct MevzuatAramaMotoru {
     func ara(_ hamSorgu: String) -> [AramaKaydi] {
         let q = hamSorgu.trimmingCharacters(in: .whitespacesAndNewlines)
         if TRMetin.uzunluk(q) < 2 { return [] }
-        let qNorm = TRMetin.normal(q)
+        // Eşleştirme ve sıralama Türkçe harf duyarsız (sitedeki mevzuat.php ile aynı, 17.11.2026).
+        let qNorm = TRMetin.harfKatla(q)
         let tokens = qNorm.split(separator: " ").map(String.init)
 
         // 1) Eski kayıtlar: ihlal adı veya madde başlığında geçen (LIKE), en çok 150 satır
         var varyantlar = [qNorm]
-        if let son = qNorm.unicodeScalars.last, let y = MevzuatAramaMotoru.yumusama[son] {
-            var govde = qNorm.unicodeScalars
-            govde.removeLast()
-            govde.append(y)
-            let v = String(govde)
-            if !v.isEmpty && !varyantlar.contains(v) { varyantlar.append(v) }
+        if let son = qNorm.unicodeScalars.last, let ylar = MevzuatAramaMotoru.yumusama[son] {
+            for y in ylar {
+                var govde = qNorm.unicodeScalars
+                govde.removeLast()
+                govde.append(y)
+                let v = String(govde)
+                if !v.isEmpty && !varyantlar.contains(v) { varyantlar.append(v) }
+            }
         }
         var satirlar: [AramaKaydi] = []
         var eskiSayi = 0
         for aday in eski {
             if eskiSayi >= 150 { break }
             var uygun = false
+            let ihlalKatli = aday.ihlalNormal.map { TRMetin.harfKatla($0) }
+            let baslikKatli = aday.baslikNormal.map { TRMetin.harfKatla($0) }
             for v in varyantlar {
-                if let i = aday.ihlalNormal, TRMetin.iceriyor(i, v) { uygun = true; break }
-                if let b = aday.baslikNormal, TRMetin.iceriyor(b, v) { uygun = true; break }
+                if let i = ihlalKatli, TRMetin.iceriyor(i, v) { uygun = true; break }
+                if let b = baslikKatli, TRMetin.iceriyor(b, v) { uygun = true; break }
             }
             if uygun {
                 eskiSayi += 1
@@ -277,7 +300,7 @@ struct MevzuatAramaMotoru {
 
         // 3) Fiil eşleşme filtresi
         satirlar = satirlar.filter {
-            !$0.fiil.isEmpty && MevzuatAramaMotoru.eslesir(kelimeler: $0.fiilKelimeleri, sorgu: qNorm, parcalar: tokens)
+            !$0.fiil.isEmpty && MevzuatAramaMotoru.eslesir(kelimeler: $0.fiilKelimeleriKatli, sorgu: qNorm, parcalar: tokens)
         }
 
         // 4) Tekrarları ayıkla: aynı fiil + aynı dayanak tek kart (Türkçe karakter, büyük-küçük harf,
@@ -315,7 +338,7 @@ struct MevzuatAramaMotoru {
         let desen = "(^|[^\\p{L}\\p{N}])" + NSRegularExpression.escapedPattern(for: qNorm) + "([^\\p{L}\\p{N}]|$)"
         let kelimeRegex = try? NSRegularExpression(pattern: desen, options: [.caseInsensitive])
         func skor(_ s: AramaKaydi) -> Int {
-            let f = s.fiilNormal
+            let f = s.fiilKatli
             if f == qNorm { return 0 }
             if let r = kelimeRegex,
                r.firstMatch(in: f, options: [], range: NSRange(f.startIndex..<f.endIndex, in: f)) != nil {
