@@ -61,6 +61,8 @@ enum Renk {
                             UIColor(onaltilik: 0xD9F0F5), UIColor(onaltilik: 0xB7E3EC)]
     static let denizKoyu = [UIColor(onaltilik: 0x07111B), UIColor(onaltilik: 0x0A1826),
                             UIColor(onaltilik: 0x0C2433), UIColor(onaltilik: 0x0E3240)]
+    /// Sayfa zemininin en alt rengi (yüzen alt menünün arka zemini).
+    static let denizSon = Color(UIColor.dinamik(0xB7E3EC, 0x0E3240))
 
     static let kahramanAcik = [UIColor(onaltilik: 0x08243A), UIColor(onaltilik: 0x0B2E4A), UIColor(onaltilik: 0x11456B)]
     static let kahramanKoyu = [UIColor(onaltilik: 0x050E17), UIColor(onaltilik: 0x08223A), UIColor(onaltilik: 0x0D3556)]

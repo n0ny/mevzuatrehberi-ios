@@ -31,7 +31,19 @@ struct AnaSekmeler: View {
         }
         .overlay(alignment: .bottom) {
             if !klavyeAcik {
-                YuzenSekmeCubugu(secili: secili, yeniSayisi: yeniSayisi, hesapResmi: foto.resim) { sec($0) }
+                ZStack(alignment: .bottom) {
+                    // Menünün arkası: sayfanın alt rengiyle dolar, yukarı doğru yumuşakça kaybolur;
+                    // kayan yazılar menünün arkasında ve altında görünmez.
+                    LinearGradient(gradient: Gradient(stops: [
+                        .init(color: Renk.denizSon.opacity(0), location: 0),
+                        .init(color: Renk.denizSon.opacity(0.92), location: 0.35),
+                        .init(color: Renk.denizSon, location: 1),
+                    ]), startPoint: .top, endPoint: .bottom)
+                    .frame(height: YuzenSekmeCubugu.kaplama + 10)
+                    .ignoresSafeArea(edges: .bottom)
+                    .allowsHitTesting(false)
+                    YuzenSekmeCubugu(secili: secili, yeniSayisi: yeniSayisi, hesapResmi: foto.resim) { sec($0) }
+                }
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: UIResponder.keyboardWillShowNotification)) { _ in
@@ -84,7 +96,7 @@ struct YuzenSekmeCubugu: View {
     let sec: (Int) -> Void
 
     /// Sayfaların altında bırakılan boşluk (çubuk + kenar boşluğu).
-    static let kaplama: CGFloat = 84
+    static let kaplama: CGFloat = 100
 
     private struct Oge {
         let no: Int
