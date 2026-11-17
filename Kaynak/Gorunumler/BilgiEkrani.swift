@@ -159,10 +159,10 @@ struct BilgiEkrani: View {
     private func istatistik(_ deger: String, _ etiket: String, vurgu: Bool = false) -> some View {
         (Text(deger).bold() + Text(" " + etiket))
             .font(.caption)
-            .foregroundColor(vurgu ? .white : Renk.mavi)
+            .foregroundColor(.white)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(vurgu ? Renk.dugme : Renk.tint)
+            .background(Color.white.opacity(vurgu ? 0.22 : 0.14))
             .cornerRadius(999)
     }
 

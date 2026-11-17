@@ -131,21 +131,21 @@ struct HesapEkrani: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text("@" + (k?.kullaniciAdi ?? ""))
                     .font(.subheadline)
-                    .foregroundColor(Renk.soluk)
+                    .foregroundColor(.white.opacity(0.8))
                 HStack(spacing: 8) {
                     Text(yonetici ? "Yönetici" : "Personel")
                     Circle().fill(aktif ? Color.green : Color.gray).frame(width: 7, height: 7)
                     Text(aktif ? "Aktif" : "Pasif")
                 }
                 .font(.caption.weight(.semibold))
-                .foregroundColor(Renk.mavi)
+                .foregroundColor(.white)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Renk.tint)
+                .background(Color.white.opacity(0.14))
                 .cornerRadius(999)
                 Text(hesap?.sonGiris.map { "Son giriş: " + $0 } ?? "Henüz giriş yapılmadı")
                     .font(.caption)
-                    .foregroundColor(Renk.soluk)
+                    .foregroundColor(.white.opacity(0.75))
             }
         }
         .overlay(

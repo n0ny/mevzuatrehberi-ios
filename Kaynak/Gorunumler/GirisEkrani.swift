@@ -157,7 +157,7 @@ struct GirisEkrani: View {
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
                             Button("Kapat") { gizlilikAcik = false }
-                                .foregroundColor(Renk.mavi)
+                                .foregroundColor(.white)
                         }
                     }
             }
@@ -168,10 +168,7 @@ struct GirisEkrani: View {
             if hatirla && kullanici.isEmpty {
                 kullanici = hatirlananKullanici
             }
-            // Giriş ekranının zemini koyu fotoğraf: saat ve pil beyaz görünsün.
-            DurumCubugu.ayarla(acik: true)
         }
-        .onDisappear { DurumCubugu.ayarla(acik: false) }
         .onChange(of: hatirla) { acik in
             if !acik { hatirlananKullanici = "" }
         }

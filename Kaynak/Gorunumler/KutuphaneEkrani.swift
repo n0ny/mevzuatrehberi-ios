@@ -7,6 +7,8 @@ struct KutuphaneEkrani: View {
     @State private var secili = "bayraklar"
     @State private var sorgu = ""
     @State private var acik: String?
+    /// Ana sayfadaki "Yeni" etiketi bir kez açılınca kalkar.
+    @AppStorage("kutuphaneGoruldu") private var kutuphaneGoruldu = false
 
     var body: some View {
         let ic = kutuphane.icerik
@@ -21,18 +23,28 @@ struct KutuphaneEkrani: View {
                         HStack(spacing: 8) {
                             ForEach(ic.bolumler, id: \.anahtar) { b in
                                 if bolumler.contains(where: { $0.anahtar == b.anahtar }) {
-                                    GrupCipi(baslik: b.baslik, secili: aktif == b.anahtar) {
+                                    // Lacivert üst alanda: seçili beyaz, diğerleri yarı saydam (Mevzuat arama süzgeçleri gibi).
+                                    Button {
                                         secili = b.anahtar
                                         sorgu = ""
                                         acik = nil
+                                    } label: {
+                                        Text(b.baslik)
+                                            .font(.subheadline.weight(.semibold))
+                                            .foregroundColor(aktif == b.anahtar ? Renk.lacivert : .white)
+                                            .padding(.horizontal, 14)
+                                            .padding(.vertical, 7)
+                                            .background(Capsule().fill(aktif == b.anahtar ? Color.white : Color.white.opacity(0.14)))
                                     }
+                                    .buttonStyle(.plain)
+                                    .accessibilityAddTraits(aktif == b.anahtar ? .isSelected : [])
                                 } else {
                                     (Text(b.baslik) + Text("  yakında").font(.caption2))
                                         .font(.subheadline.weight(.semibold))
-                                        .foregroundColor(Renk.soluk)
+                                        .foregroundColor(.white.opacity(0.55))
                                         .padding(.horizontal, 14)
                                         .padding(.vertical, 7)
-                                        .background(Capsule().fill(Renk.kart.opacity(0.6)))
+                                        .background(Capsule().fill(Color.white.opacity(0.07)))
                                 }
                             }
                         }
@@ -60,6 +72,7 @@ struct KutuphaneEkrani: View {
         .background(DenizZemini().ignoresSafeArea())
         .navigationTitle("Bilgi Kütüphanesi")
         .markaBasligi()
+        .onAppear { kutuphaneGoruldu = true }
         .task { await kutuphane.guncelle() }
         .onChange(of: sorgu) { _ in acik = nil }
     }

@@ -178,10 +178,10 @@ struct YonetimEkrani: View {
     private func ozetCipi(_ deger: String, _ etiket: String, uyari: Bool) -> some View {
         (Text(deger).bold() + Text(" " + etiket))
             .font(.caption)
-            .foregroundColor(uyari ? Renk.amber : Renk.mavi)
+            .foregroundColor(.white)
             .padding(.horizontal, 10)
             .padding(.vertical, 5)
-            .background(uyari ? Renk.amberZemin : Renk.tint)
+            .background(uyari ? Color.orange.opacity(0.45) : Color.white.opacity(0.14))
             .cornerRadius(999)
     }
 

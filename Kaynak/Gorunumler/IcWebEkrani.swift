@@ -72,7 +72,7 @@ struct IcWebEkrani: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button("Kapat") { kapat() }
-                        .foregroundColor(Renk.mavi)
+                        .foregroundColor(.white)
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 18) {

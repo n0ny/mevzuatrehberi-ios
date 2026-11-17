@@ -202,26 +202,29 @@ struct AnaEkran: View {
     /// dashboard.php rozeti: bu haftanın setinde cevap bekleyen soru sayısı.
     @State private var bekleyenSoru = 0
     @State private var yakindaAcik = false
+    /// Bilgi Kütüphanesi bir kez açılınca "Yeni" etiketi kalkar (KutuphaneEkrani yazar).
+    @AppStorage("kutuphaneGoruldu") private var kutuphaneGoruldu = false
+
+    /// Kart zemininin lacivert üst alana binme miktarı (aynı zamanda köşe yuvarlaklığı; sürüm 6 ile aynı).
+    static let sayfaBinmesi: CGFloat = 28
 
     var body: some View {
         YenilenebilirKaydirma {
             VStack(alignment: .leading, spacing: 0) {
-                // Tek satır: "Hoş geldin, Ad 👋" (uzun adlarda yazı küçülür, alt satıra geçmez).
-                Text("Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋")
-                    .font(.system(size: 26, weight: .bold))
-                    .foregroundColor(Renk.murekkep)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.55)
-                    .padding(.horizontal, 22)
-                .padding(.top, 6)
-
-                // Mevzuat arama: dokununca arama sayfası açılır.
-                NavigationLink(destination: AramaEkrani()) {
-                    AnaAramaCubugu()
+                // Lacivert üst alan (sürüm 6 gibi): tek satır "Hoş geldin, Ad 👋" ve arama çubuğu.
+                Kahraman(baslik: "Hoş geldin, \(oturum.kullanici?.ad ?? "") 👋",
+                         aciklama: "Aradığın mevzuata hızlıca ulaş.",
+                         tekSatir: true,
+                         baslikBoyutu: 30,
+                         ustBosluk: 14,
+                         altBosluk: 24 + AnaEkran.sayfaBinmesi) {
+                    // Mevzuat arama: dokununca arama sayfası açılır.
+                    NavigationLink(destination: AramaEkrani()) {
+                        AnaAramaCubugu()
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, 6)
                 }
-                .buttonStyle(.plain)
-                .padding(.horizontal, 18)
-                .padding(.top, 16)
 
                 VStack(alignment: .leading, spacing: 11) {
                     durumSatiri
@@ -243,7 +246,7 @@ struct AnaEkran: View {
                     NavigationLink(destination: KutuphaneEkrani()) {
                         AnaKart(sembol: "flag", renk: .mor, baslik: "Bilgi Kütüphanesi",
                                 aciklama: "Bayraklar, ses işaretleri ve seyir fenerleri",
-                                rozet: "Yeni")
+                                rozet: kutuphaneGoruldu ? nil : "Yeni")
                     }
                     HStack(spacing: 11) {
                         Button {
@@ -272,12 +275,16 @@ struct AnaEkran: View {
                     .padding(.top, 10)
                 }
                 .buttonStyle(.plain)
-                .padding(.horizontal, 18)
-                .padding(.top, 16)
+                .padding(.horizontal, 16)
+                .padding(.top, 20)
                 .padding(.bottom, 16)
+                // Kartların zemini yuvarlak köşeli bir sayfa gibi lacivert alanın üstüne biner.
+                .background(DenizZemini().clipShape(UstKoseYuvarlak(yaricap: AnaEkran.sayfaBinmesi)))
+                .padding(.top, -AnaEkran.sayfaBinmesi)
             }
         }
-        .background(DenizZemini().ignoresSafeArea())
+        // Kart sayfasının bittiği renk; içerik kısa kalırsa altta ek yeri görünmez.
+        .background(Renk.denizSon.ignoresSafeArea())
         // Geri düğmesinde görünen ad; başlık ortada gösterilmez.
         .navigationTitle("Mevzuat Rehberi")
         .navigationBarTitleDisplayMode(.inline)
@@ -296,10 +303,10 @@ struct AnaEkran: View {
                 } label: {
                     Image(systemName: sema == .dark ? "sun.max" : "moon")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundColor(Renk.murekkep)
-                        .frame(width: 38, height: 38)
-                        .background(Circle().fill(Renk.kart))
-                        .shadow(color: Renk.golge, radius: 6, x: 0, y: 3)
+                        .foregroundColor(.white)
+                        .frame(width: 36, height: 36)
+                        .background(Circle().fill(Color.white.opacity(0.10)))
+                        .overlay(Circle().stroke(Color.white.opacity(0.16), lineWidth: 1))
                 }
                 .accessibilityLabel(sema == .dark ? "Gündüz moduna geç" : "Gece moduna geç")
             }
@@ -357,27 +364,21 @@ struct AnaEkran: View {
     }
 }
 
-/// Ana sayfa üst çubuğu: lacivert daire içinde amblem | altın "MEVZUAT REHBERİ" (sürüm 6'daki marka).
-/// Gündüz zemini açık olduğundan altın biraz koyulaştırılır (okunurluk); gece aynı altın.
+/// Ana sayfa üst çubuğu (sürüm 6 ile aynı): amblem | altın "MEVZUAT REHBERİ".
 struct AnaMarkaEtiketi: View {
-    private static let altin = Color(UIColor.dinamik(0x8C6A1F, 0xDDBF7E))
-
     var body: some View {
         HStack(spacing: 10) {
             Image("AmblemSimge")
                 .resizable()
                 .scaledToFit()
-                .frame(height: 20)
-                .frame(width: 38, height: 38)
-                .background(Circle().fill(Renk.lacivert))
-                .shadow(color: Renk.golge, radius: 6, x: 0, y: 3)
+                .frame(height: 22)
             Rectangle()
-                .fill(Renk.cizgi)
+                .fill(Color.white.opacity(0.22))
                 .frame(width: 1, height: 18)
             Text("MEVZUAT REHBERİ")
-                .font(.system(size: 13, weight: .semibold))
+                .font(.system(size: 12.5, weight: .semibold))
                 .kerning(2.4)
-                .foregroundColor(AnaMarkaEtiketi.altin)
+                .foregroundColor(Renk.altin)
                 .lineLimit(1)
                 .fixedSize()
         }

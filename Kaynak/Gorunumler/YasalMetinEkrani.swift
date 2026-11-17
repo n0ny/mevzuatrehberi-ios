@@ -48,10 +48,10 @@ struct YasalMetinEkrani: View {
                     if let t = veri?.tarih, !t.isEmpty {
                         Text("Son güncelleme: \(t)")
                             .font(.caption.weight(.semibold))
-                            .foregroundColor(Renk.mavi)
+                            .foregroundColor(.white)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 5)
-                            .background(Renk.tint)
+                            .background(Color.white.opacity(0.14))
                             .clipShape(Capsule())
                     }
                 }

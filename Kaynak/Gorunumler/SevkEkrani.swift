@@ -21,7 +21,7 @@ struct SevkEkrani: View {
                         Text("\(depo.sevkler.count) toplam kayıt")
                     }
                     .font(.footnote)
-                    .foregroundColor(Renk.soluk)
+                    .foregroundColor(.white.opacity(0.8))
                     .padding(.top, 2)
                 }
 

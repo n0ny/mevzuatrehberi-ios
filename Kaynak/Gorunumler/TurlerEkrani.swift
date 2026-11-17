@@ -25,10 +25,10 @@ struct TurlerEkrani: View {
                     if !sirali.isEmpty {
                         (Text("\(sirali.count)").bold() + Text(" tür"))
                             .font(.footnote)
-                            .foregroundColor(Renk.mavi)
+                            .foregroundColor(.white)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 4)
-                            .background(Renk.tint)
+                            .background(Color.white.opacity(0.14))
                             .cornerRadius(999)
                     }
                 }
@@ -108,7 +108,7 @@ struct GrupCipi: View {
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .foregroundColor(secili ? .white : Renk.murekkep)
-                .background(secili ? Renk.dugme : Renk.kart)
+                .background(secili ? Renk.lacivert : Renk.kart)
                 .cornerRadius(999)
                 .overlay(RoundedRectangle(cornerRadius: 999).stroke(secili ? Color.clear : Renk.cizgi, lineWidth: 1))
         }

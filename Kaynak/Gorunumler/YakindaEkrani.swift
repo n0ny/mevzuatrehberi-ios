@@ -93,7 +93,7 @@ struct YakindaEkrani: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Kapat") { kapat() }
-                        .foregroundColor(Renk.mavi)
+                        .foregroundColor(.white)
                 }
             }
         }
