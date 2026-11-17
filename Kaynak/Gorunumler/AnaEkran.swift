@@ -394,10 +394,17 @@ struct AnaAramaCubugu: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundColor(Renk.ustEtiket)
-            Text("Kanun, madde veya fiil ara…")
-                .font(.callout)
-                .foregroundColor(Renk.soluk)
-                .lineLimit(1)
+            // Dokununca arama sayfası açıldığı baştan anlaşılsın (18.11 kullanıcı kararı).
+            VStack(alignment: .leading, spacing: 1) {
+                Text("İhlal, sevk ve yaptırım ara")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundColor(Renk.murekkep)
+                Text("Arama sayfasını açmak için dokun")
+                    .font(.caption)
+                    .foregroundColor(Renk.soluk)
+            }
+            .lineLimit(1)
+            .minimumScaleFactor(0.8)
             Spacer(minLength: 4)
             // Sitedeki kutu gibi: "Ara" yazısı yerine ok (dokununca arama sayfası açılır).
             Image(systemName: "arrow.right")
@@ -412,7 +419,8 @@ struct AnaAramaCubugu: View {
         .background(Capsule().fill(Renk.kart))
         .shadow(color: Renk.golge, radius: 10, x: 0, y: 5)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Mevzuat arama")
+        .accessibilityLabel("İhlal, sevk ve yaptırım ara")
+        .accessibilityHint("Arama sayfasını açar")
     }
 }
 
