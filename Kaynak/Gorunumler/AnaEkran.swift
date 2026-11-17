@@ -119,12 +119,13 @@ struct YuzenSekmeCubugu: View {
         }
         .padding(.horizontal, 6)
         .frame(height: 64)
+        // İnce çerçeve zeminin parçası: seçili sekmenin yukarı kalkan dairesinin üstünden çizgi geçmesin.
         .background(
             Capsule(style: .continuous)
                 .fill(Renk.kart)
+                .overlay(Capsule(style: .continuous).stroke(Renk.cizgi.opacity(0.6), lineWidth: 0.5))
                 .shadow(color: Renk.golge, radius: 14, x: 0, y: 8)
         )
-        .overlay(Capsule(style: .continuous).stroke(Renk.cizgi.opacity(0.6), lineWidth: 0.5))
         .padding(.horizontal, 14)
         .padding(.bottom, 6)
     }
