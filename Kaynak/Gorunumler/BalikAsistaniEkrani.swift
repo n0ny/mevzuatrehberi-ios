@@ -198,6 +198,9 @@ struct BalikAsistaniEkrani: View {
             Text("Bu kart telefondaki verilerde yok. İçeriği yenileyip (ana sayfada aşağı çek) tekrar dene.")
         }
         .task { await durumYukle() }
+        // Yazma alanı altta kalsın diye yüzen sekme çubuğu bu ekranda gizlenir (geri dönünce yeniden görünür).
+        .onAppear { SekmeCubuguDurumu.paylasilan.gizli = true }
+        .onDisappear { SekmeCubuguDurumu.paylasilan.gizli = false }
     }
 
     // MARK: Parçalar

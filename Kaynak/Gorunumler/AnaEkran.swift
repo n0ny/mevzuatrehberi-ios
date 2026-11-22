@@ -1,5 +1,11 @@
 import SwiftUI
 
+/// Bazı ekranlar (ör. Balık Asistanı) alttaki yüzen sekme çubuğunu gizler; böylece yazma alanı ekranın altında görünür.
+final class SekmeCubuguDurumu: ObservableObject {
+    static let paylasilan = SekmeCubuguDurumu()
+    @Published var gizli = false
+}
+
 /// Uygulamanın alt sekmeleri. Sistemin sekme çubuğu gizlidir (Renk.sekmeCubugunuAyarla);
 /// altta yüzen sekme çubuğu (YuzenSekmeCubugu) çizilir. Sekmeler ve içerikleri aynıdır.
 struct AnaSekmeler: View {
@@ -8,6 +14,7 @@ struct AnaSekmeler: View {
     @State private var secili = 0
     @State private var yeniSayisi = 0
     @State private var klavyeAcik = false
+    @ObservedObject private var cubuk = SekmeCubuguDurumu.paylasilan
     /// Seçili sekmeye yeniden dokununca o sekme ilk sayfasına döner (sistem sekme çubuğundaki gibi).
     @State private var sekmeKimligi: [Int: UUID] = Dictionary(uniqueKeysWithValues: (0...4).map { ($0, UUID()) })
 
@@ -30,7 +37,7 @@ struct AnaSekmeler: View {
                 .tag(4)
         }
         .overlay(alignment: .bottom) {
-            if !klavyeAcik {
+            if !klavyeAcik && !cubuk.gizli {
                 YuzenSekmeCubugu(secili: secili, yeniSayisi: yeniSayisi, hesapResmi: foto.resim) { sec($0) }
             }
         }
@@ -57,7 +64,7 @@ struct AnaSekmeler: View {
             .navigationViewStyle(.stack)
             .id(sekmeKimligi[no] ?? AnaSekmeler.sabitKimlik)
             .safeAreaInset(edge: .bottom) {
-                Color.clear.frame(height: klavyeAcik ? 0 : YuzenSekmeCubugu.kaplama)
+                Color.clear.frame(height: (klavyeAcik || cubuk.gizli) ? 0 : YuzenSekmeCubugu.kaplama)
             }
     }
 
