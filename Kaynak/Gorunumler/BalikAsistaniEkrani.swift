@@ -35,6 +35,9 @@ struct AsistanMesaji: Identifiable {
 }
 
 enum AsistanKurallari {
+    /// "Ayrıntılar" ile açılan tam uyarı (ilk cümle kutunun başında her zaman görünür).
+    static let uyariMetni = "Boy, yasak dönem ve miktar gibi kurallar yalnızca uygulamadaki tür kartlarından verilir. Fotoğrafa kişi, yüz, tekne adı veya plaka gelmemesine dikkat et. Sorular ve fotoğraflar cevap üretilmesi için yapay zekâ hizmetine (Anthropic, yurt dışı) gönderilir; fotoğraflar sunucuda saklanmaz. Soru ve cevaplar kalite ve maliyet kontrolü için kaydedilir."
+
     /// Sunucuya gönderilecek en fazla geçmiş mesaj (sitedeki gibi son 12).
     static let gecmisSiniri = 12
 
@@ -108,6 +111,7 @@ struct BalikAsistaniEkrani: View {
     @State private var kameraAcik = false
     @State private var acikTur: Tur?
     @State private var kartBulunamadi = false
+    @State private var uyariAcik = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -205,18 +209,35 @@ struct BalikAsistaniEkrani: View {
 
     // MARK: Parçalar
 
+    /// Kısa uyarı; "Ayrıntılar" ile tam metin (KVKK / yurt dışı aktarım bilgisi) açılır.
     private var uyariKutusu: some View {
-        (Text("Deneme sürümü. ").bold()
-            + Text(uyari.isEmpty
-                   ? "Tanıma bir tahmindir; işlem yapmadan önce tür kartıyla karşılaştır. Boy, yasak dönem ve miktar gibi kurallar yalnızca uygulamadaki tür kartlarından verilir. Fotoğrafa kişi, yüz, tekne adı veya plaka gelmemesine dikkat et. Sorular ve fotoğraflar cevap üretilmesi için yapay zekâ hizmetine (Anthropic, yurt dışı) gönderilir; fotoğraflar sunucuda saklanmaz. Soru ve cevaplar kalite ve maliyet kontrolü için kaydedilir."
-                   : uyari))
-            .font(.footnote)
-            .foregroundColor(Renk.murekkep)
-            .fixedSize(horizontal: false, vertical: true)
-            .padding(12)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Renk.amberZemin)
-            .cornerRadius(14)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Image(systemName: "info.circle")
+                    .foregroundColor(Renk.amber)
+                (Text("Tanıma bir tahmindir. ").bold()
+                    + Text("İşlem yapmadan önce tür kartıyla karşılaştır."))
+                    .fixedSize(horizontal: false, vertical: true)
+                Spacer(minLength: 0)
+            }
+            if uyariAcik {
+                Text(AsistanKurallari.uyariMetni)
+                    .foregroundColor(Renk.soluk)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Button(uyariAcik ? "Kısalt" : "Ayrıntılar") {
+                withAnimation(.easeInOut(duration: 0.2)) { uyariAcik.toggle() }
+            }
+            .font(.footnote.weight(.semibold))
+            .foregroundColor(Renk.mavi)
+        }
+        .font(.footnote)
+        .foregroundColor(Renk.murekkep)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Renk.amberZemin)
+        .cornerRadius(14)
     }
 
     private var bosDurum: some View {
