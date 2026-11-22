@@ -445,7 +445,9 @@ final class TemelTestler: XCTestCase {
         c.keyDecodingStrategy = .convertFromSnakeCase
         let v = try c.decode(AsistanHakVerisi.self, from: JSONEncoder().encode(h))
         XCTAssertEqual(v.kisiler.first?.sinirMetin, 25)
+        XCTAssertEqual(AsistanYonetimKurallari.ara(v.kisiler, "veli").count, 1)
         XCTAssertEqual(AsistanYonetimKurallari.ara(v.kisiler, "VELİ").count, 1)
+        XCTAssertEqual(AsistanYonetimKurallari.ara(v.kisiler, "ayşe").count, 0)
 
         let r = try satir(#"""
         {"ok": true, "aylar": ["2026-11"], "ay": "2026-11", "soru": 1, "foto": 0, "usd": 0, "tavan": 5.0,

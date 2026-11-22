@@ -90,11 +90,12 @@ enum AsistanYonetimKurallari {
     }
 
     static func ara(_ liste: [AsistanHakKisi], _ metin: String) -> [AsistanHakKisi] {
-        let q = metin.trimmingCharacters(in: .whitespaces)
+        // Türkçe büyük/küçük harf (İ/i, I/ı) önce Türkçe kurala göre küçültülür.
+        let q = metin.trimmingCharacters(in: .whitespaces).lowercased(with: TRMetin.tr)
         if q.isEmpty { return liste }
         return liste.filter { k in
-            (k.ad + " " + k.kullaniciAdi).range(of: q, options: [.caseInsensitive, .diacriticInsensitive],
-                                                 locale: TRMetin.tr) != nil
+            (k.ad + " " + k.kullaniciAdi).lowercased(with: TRMetin.tr)
+                .range(of: q, options: [.diacriticInsensitive], locale: TRMetin.tr) != nil
         }
     }
 }
