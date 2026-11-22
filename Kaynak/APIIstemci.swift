@@ -493,4 +493,39 @@ enum APIIstemci {
                              kartlar: kartlar,
                              kalanYazi: j["kalan_yazi"]?.metin ?? "")
     }
+
+    /// Asistanın bir cevabını bildirir (yanlış bilgi, uygunsuz içerik…).
+    static func asistanBildir(neden: String, aciklama: String, soru: String, cevap: String, token: String) async throws -> String {
+        let j = try await gonder(tokenliIstek("asistan.php", token: token,
+                                              govde: ["islem": "bildir", "neden": neden, "aciklama": aciklama,
+                                                      "soru": soru, "cevap": cevap]))
+        return j["mesaj"]?.metin ?? "Bildirimin alındı."
+    }
+
+    // MARK: Yönetim > Balık Asistanı — api/yonetim-asistan.php (yalnızca yönetici)
+
+    static func asistanHaklari(token: String) async throws -> AsistanHakVerisi {
+        let j = try await gonder(tokenliIstek("yonetim-asistan.php",
+                                              sorgu: [URLQueryItem(name: "bolum", value: "haklar")], token: token))
+        return try snakeCoz(j, AsistanHakVerisi.self)
+    }
+
+    static func asistanRaporu(ay: String?, kisi: Int?, token: String) async throws -> AsistanRaporu {
+        var sorgu = [URLQueryItem(name: "bolum", value: "rapor")]
+        if let a = ay, !a.isEmpty { sorgu.append(URLQueryItem(name: "ay", value: a)) }
+        if let k = kisi, k > 0 { sorgu.append(URLQueryItem(name: "k", value: String(k))) }
+        let j = try await gonder(tokenliIstek("yonetim-asistan.php", sorgu: sorgu, token: token))
+        return try snakeCoz(j, AsistanRaporu.self)
+    }
+
+    /// islem: "kaydet" (metin, foto) ya da "sifirla"
+    static func asistanHakIslem(_ islem: String, uid: Int, metin: Int = 0, foto: Int = 0, token: String) async throws -> String {
+        var govde = ["islem": islem, "uid": String(uid)]
+        if islem == "kaydet" {
+            govde["metin"] = String(metin)
+            govde["foto"] = String(foto)
+        }
+        let j = try await gonder(tokenliIstek("yonetim-asistan.php", token: token, govde: govde))
+        return j["mesaj"]?.metin ?? "İşlem tamamlandı."
+    }
 }

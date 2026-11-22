@@ -207,6 +207,10 @@ struct YonetimEkrani: View {
                 icerikEtiketi("fish", "Tür kartları", "Fotoğraf, asgari boy ve yasak dönemi gir")
             }
             .buttonStyle(.plain)
+            NavigationLink(destination: AsistanYonetimEkrani()) {
+                icerikEtiketi("camera.viewfinder", "Balık Asistanı", "Soru hakları, kullanım raporu, bildirilen cevaplar")
+            }
+            .buttonStyle(.plain)
         }
         .padding(16)
         .kart()

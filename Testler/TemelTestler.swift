@@ -433,4 +433,33 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(AsistanKurallari.gecmis(uzun).count, 12)
         XCTAssertEqual(AsistanKurallari.gecmis(uzun).last?["metin"], "s29")
     }
+
+    /// Yönetim > Balık Asistanı: api/yonetim-asistan.php cevaplarının çözümü.
+    func testAsistanYonetimCozumleme() throws {
+        let h = try satir(#"""
+        {"ok": true, "varsayilan_metin": 10, "varsayilan_foto": 10, "herkese_acik": false,
+         "kisiler": [{"id": 2, "ad": "Ali Veli", "kullanici_adi": "ali", "yonetici": false, "ozel": true,
+                      "sinir_metin": 25, "sinir_foto": 4, "kullanilan_metin": 3, "kullanilan_foto": 1}]}
+        """#)
+        let c = JSONDecoder()
+        c.keyDecodingStrategy = .convertFromSnakeCase
+        let v = try c.decode(AsistanHakVerisi.self, from: JSONEncoder().encode(h))
+        XCTAssertEqual(v.kisiler.first?.sinirMetin, 25)
+        XCTAssertEqual(AsistanYonetimKurallari.ara(v.kisiler, "VELİ").count, 1)
+
+        let r = try satir(#"""
+        {"ok": true, "aylar": ["2026-11"], "ay": "2026-11", "soru": 1, "foto": 0, "usd": 0, "tavan": 5.0,
+         "kisiler": [{"id": 1, "etiket": "B. G.", "soru": 1, "foto": 0, "usd": 0.0123, "son": "2026-11-22 15:49:38"}],
+         "secilen": 0,
+         "sorular": [{"zaman": "2026-11-22 15:49:38", "kisi_id": 1, "etiket": "B. G.", "foto": false, "maliyet": 0,
+                      "soru": "hamsi", "cevap": "**Hamsi**"}],
+         "bildirimler": [{"zaman": "2026-11-22 15:49:38", "etiket": "B. G.", "neden": "Yanlış tür tanıma",
+                          "aciklama": "", "soru": "hamsi", "cevap": "Hamsi", "kaynak": "uygulama"}]}
+        """#)
+        let rv = try c.decode(AsistanRaporu.self, from: JSONEncoder().encode(r))
+        XCTAssertEqual(rv.sorular.first?.kisiId, 1)
+        XCTAssertEqual(rv.bildirimler.count, 1)
+        XCTAssertEqual(AsistanYonetimKurallari.kisaZaman("2026-11-22 15:49:38"), "22.11 15:49")
+        XCTAssertEqual(AsistanYonetimKurallari.ayAdi("2026-11"), "Kasım 2026")
+    }
 }

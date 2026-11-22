@@ -32,6 +32,9 @@ struct AsistanMesaji: Identifiable {
     let metin: String
     var foto: UIImage? = nil
     var kartlar: [AsistanKarti] = []
+    /// Asistan cevabında: cevabın verildiği soru (Bildir için).
+    var soru: String = ""
+    var bildirildi = false
 }
 
 enum AsistanKurallari {
@@ -112,6 +115,7 @@ struct BalikAsistaniEkrani: View {
     @State private var acikTur: Tur?
     @State private var kartBulunamadi = false
     @State private var uyariAcik = false
+    @State private var bildirilen: AsistanMesaji?
 
     var body: some View {
         VStack(spacing: 0) {
@@ -195,6 +199,14 @@ struct BalikAsistaniEkrani: View {
         }
         .sheet(item: $acikTur) { t in
             TurKartiPenceresi(tur: t)
+        }
+        .sheet(item: $bildirilen) { m in
+            AsistanBildirPenceresi(mesaj: m) { id in
+                if let i = mesajlar.firstIndex(where: { $0.id == id }) {
+                    mesajlar[i].bildirildi = true
+                }
+            }
+            .environmentObject(oturum)
         }
         .alert("Tür kartı bulunamadı", isPresented: $kartBulunamadi) {
             Button("Tamam", role: .cancel) {}
@@ -307,6 +319,21 @@ struct BalikAsistaniEkrani: View {
                                 .buttonStyle(.plain)
                             }
                         }
+                    }
+                    if m.bildirildi {
+                        Label("Bildirildi, teşekkürler", systemImage: "checkmark")
+                            .font(.caption)
+                            .foregroundColor(Renk.yesil)
+                    } else {
+                        Button {
+                            bildirilen = m
+                        } label: {
+                            Label("Bildir", systemImage: "flag")
+                                .font(.caption)
+                                .foregroundColor(Renk.soluk)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Bu cevabı bildir")
                     }
                 }
                 .padding(.horizontal, 14)
@@ -429,7 +456,8 @@ struct BalikAsistaniEkrani: View {
         Task {
             do {
                 let c = try await APIIstemci.asistanSor(soru: metin, foto: veri, gecmis: gecmis, token: t)
-                mesajlar.append(AsistanMesaji(rol: .asistan, metin: c.cevap, kartlar: c.kartlar))
+                mesajlar.append(AsistanMesaji(rol: .asistan, metin: c.cevap, kartlar: c.kartlar,
+                                              soru: metin.isEmpty ? "(yalnızca fotoğraf)" : metin))
                 if !c.kalanYazi.isEmpty {
                     kalanYazi = c.kalanYazi
                 }
@@ -448,6 +476,105 @@ struct BalikAsistaniEkrani: View {
         } else {
             kartBulunamadi = true
         }
+    }
+}
+
+/// Asistanın bir cevabını bildirme penceresi (Google Play yapay zekâ içeriği kuralı).
+struct AsistanBildirPenceresi: View {
+    let mesaj: AsistanMesaji
+    let bildirildi: (UUID) -> Void
+    @EnvironmentObject var oturum: Oturum
+    @Environment(\.dismiss) private var kapat
+    @State private var neden = ""
+    @State private var aciklama = ""
+    @State private var bekliyor = false
+    @State private var hata: String?
+
+    static let nedenler: [(kod: String, ad: String)] = [
+        ("yanlis", "Yanlış bilgi"),
+        ("tanima", "Yanlış tür tanıma"),
+        ("uygunsuz", "Uygunsuz / rahatsız edici"),
+        ("diger", "Diğer"),
+    ]
+
+    var body: some View {
+        NavigationView {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 14) {
+                    Text("Bu cevapta bir sorun mu var? Bildirimin uygulama yöneticisine iletilir ve asistanı düzeltmek için kullanılır.")
+                        .font(.footnote)
+                        .foregroundColor(Renk.soluk)
+                        .fixedSize(horizontal: false, vertical: true)
+                    if let h = hata {
+                        Bildirim(metin: h, hata: true)
+                    }
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Neden?")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(Renk.murekkep)
+                        ForEach(Self.nedenler, id: \.kod) { n in
+                            Button {
+                                neden = n.kod
+                            } label: {
+                                HStack {
+                                    Image(systemName: neden == n.kod ? "largecircle.fill.circle" : "circle")
+                                        .foregroundColor(neden == n.kod ? Renk.mavi : Renk.soluk)
+                                    Text(n.ad)
+                                        .foregroundColor(Renk.murekkep)
+                                    Spacer()
+                                }
+                                .padding(.vertical, 6)
+                                .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    .padding(14)
+                    .kart()
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Açıklama (isteğe bağlı)")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundColor(Renk.murekkep)
+                        TextField("Doğrusu nedir ya da ne rahatsız etti?", text: $aciklama)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    .padding(14)
+                    .kart()
+                    AnaDugme(baslik: "Bildirimi gönder", bekliyor: bekliyor) {
+                        Task { await gonder() }
+                    }
+                    .disabled(neden.isEmpty || bekliyor)
+                    .opacity(neden.isEmpty ? 0.5 : 1)
+                }
+                .padding(16)
+            }
+            .background(DenizZemini().ignoresSafeArea())
+            .navigationTitle("Cevabı bildir")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button("Vazgeç") { kapat() }
+                }
+            }
+        }
+    }
+
+    private func gonder() async {
+        guard let t = oturum.token, !neden.isEmpty else { return }
+        bekliyor = true
+        hata = nil
+        do {
+            _ = try await APIIstemci.asistanBildir(neden: neden,
+                                                   aciklama: String(aciklama.prefix(500)),
+                                                   soru: mesaj.soru, cevap: mesaj.metin, token: t)
+            bildirildi(mesaj.id)
+            kapat()
+        } catch let h as APIHatasi {
+            hata = h.aciklama
+        } catch {
+            hata = "Bildirim gönderilemedi. Tekrar dene."
+        }
+        bekliyor = false
     }
 }
 
