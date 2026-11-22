@@ -210,6 +210,12 @@ struct AsistanYonetimEkrani: View {
                 Text(k.ad)
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(Renk.murekkep)
+                if !k.kullaniciAdi.isEmpty && k.kullaniciAdi != k.ad {
+                    // Aynı adlı birden çok hesap kullanıcı adından ayırt edilir.
+                    Text("Kullanıcı adı: \(k.kullaniciAdi)")
+                        .font(.caption2)
+                        .foregroundColor(Renk.soluk)
+                }
                 if k.yonetici {
                     Text("Bu ay \(k.kullanilanMetin) soru · \(k.kullanilanFoto) fotoğraf")
                         .font(.caption)
