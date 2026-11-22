@@ -204,6 +204,8 @@ struct AnaEkran: View {
     @State private var yakindaAcik = false
     /// Bilgi Kütüphanesi bir kez açılınca "Yeni" etiketi kalkar (KutuphaneEkrani yazar).
     @AppStorage("kutuphaneGoruldu") private var kutuphaneGoruldu = false
+    /// Balık Asistanı kartı yalnızca sunucu "açık" derse görünür (şimdilik yalnızca yönetici). Son durum hatırlanır.
+    @AppStorage("asistanAcik") private var asistanAcik = false
 
     /// Kart zemininin lacivert üst alana binme miktarı (aynı zamanda köşe yuvarlaklığı; sürüm 6 ile aynı).
     static let sayfaBinmesi: CGFloat = 28
@@ -247,6 +249,13 @@ struct AnaEkran: View {
                         AnaKart(sembol: "flag", renk: .mor, baslik: "Bilgi Kütüphanesi",
                                 aciklama: "Bayraklar, ses işaretleri ve seyir fenerleri",
                                 rozet: kutuphaneGoruldu ? nil : "Yeni")
+                    }
+                    if asistanAcik {
+                        NavigationLink(destination: BalikAsistaniEkrani()) {
+                            AnaKart(sembol: "camera.viewfinder", renk: .mavi, baslik: "Balık Asistanı",
+                                    aciklama: "Fotoğraftan tür tanı, balıklar hakkında sor",
+                                    rozet: "Deneme")
+                        }
                     }
                     HStack(spacing: 11) {
                         Button {
@@ -324,6 +333,13 @@ struct AnaEkran: View {
         Task {
             if let v = try? await APIIstemci.bilgi(setId: nil, token: t) {
                 bekleyenSoru = v.bekleyen
+            }
+            // Sunucuda asistan dosyası yoksa ya da kapalıysa kart gizlenir; internet yoksa son durum kalır.
+            do {
+                asistanAcik = try await APIIstemci.asistanDurum(token: t).acik
+            } catch APIHatasi.baglanti {
+            } catch {
+                asistanAcik = false
             }
         }
     }

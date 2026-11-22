@@ -460,4 +460,37 @@ enum APIIstemci {
         }
         return IcerikCevabi(degisti: true, h: yeniH, veri: veri)
     }
+
+    // MARK: Balık Asistanı — api/asistan.php
+
+    /// Asistan bu kullanıcıya açık mı, bu ay kaç hak kaldı?
+    static func asistanDurum(token: String) async throws -> AsistanDurumu {
+        let j = try await gonder(tokenliIstek("asistan.php", token: token))
+        return AsistanDurumu(acik: j["acik"]?.mantik ?? false,
+                             kalanYazi: j["kalan_yazi"]?.metin ?? "",
+                             uyari: j["uyari"]?.metin ?? "")
+    }
+
+    /// Soru (ve isteğe bağlı fotoğraf) gönderir. Sohbet geçmişi telefonda tutulur, her soruda gönderilir.
+    static func asistanSor(soru: String, foto: Data?, gecmis: [[String: String]], token: String) async throws -> AsistanCevabi {
+        var govde: [String: Any] = ["islem": "sor", "soru": soru, "gecmis": gecmis]
+        if let f = foto {
+            govde["foto"] = f.base64EncodedString()
+        }
+        var istek = tokenliIstek("asistan.php", token: token)
+        istek.httpMethod = "POST"
+        istek.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        istek.httpBody = try? JSONSerialization.data(withJSONObject: govde)
+        istek.timeoutInterval = 100
+        let j = try await gonder(istek)
+        let kartlar: [AsistanKarti] = (j["kartlar"]?.dizi ?? []).compactMap { d in
+            guard let o = d.nesne else { return nil }
+            let id = o["id"]?.tamsayi ?? 0
+            let ad = o["ad"]?.metin ?? ""
+            return id > 0 && !ad.isEmpty ? AsistanKarti(id: id, ad: ad) : nil
+        }
+        return AsistanCevabi(cevap: j["cevap"]?.metin ?? "",
+                             kartlar: kartlar,
+                             kalanYazi: j["kalan_yazi"]?.metin ?? "")
+    }
 }

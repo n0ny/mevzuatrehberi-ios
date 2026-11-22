@@ -1,4 +1,5 @@
 import XCTest
+import UIKit
 @testable import MevzuatRehberi
 
 final class TemelTestler: XCTestCase {
@@ -413,5 +414,23 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(v.kayitlar[0].tarihYazi, "1 Kasım 2026")
         XCTAssertEqual(v.kayitlar[0].durumTuru, "yayinda")
         XCTAssertNil(v.kayitlar[0].bildirim)
+    }
+
+    /// Balık Asistanı: sunucuya giden geçmiş (sitedeki balik-asistani.php ile aynı biçim).
+    func testAsistanGecmisi() {
+        var m: [AsistanMesaji] = []
+        m.append(AsistanMesaji(rol: .kullanici, metin: "Selam"))
+        m.append(AsistanMesaji(rol: .asistan, metin: "Merhaba"))
+        m.append(AsistanMesaji(rol: .kullanici, metin: "", foto: UIImage()))
+        m.append(AsistanMesaji(rol: .hata, metin: "Bağlantı hatası"))
+        let g = AsistanKurallari.gecmis(m)
+        XCTAssertEqual(g.count, 3)
+        XCTAssertEqual(g[0], ["rol": "user", "metin": "Selam"])
+        XCTAssertEqual(g[1], ["rol": "assistant", "metin": "Merhaba"])
+        XCTAssertEqual(g[2]["metin"], "[Fotoğraf gönderildi] Bu fotoğraftaki canlı hangi tür?")
+
+        let uzun = (0..<30).map { AsistanMesaji(rol: .kullanici, metin: "s\($0)") }
+        XCTAssertEqual(AsistanKurallari.gecmis(uzun).count, 12)
+        XCTAssertEqual(AsistanKurallari.gecmis(uzun).last?["metin"], "s29")
     }
 }
