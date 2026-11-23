@@ -569,12 +569,12 @@ struct SoruKarti: View {
         .contentShape(Rectangle())
     }
 
-    @ViewBuilder
     private var sureYazi: String {
         if let s = soru.cevapSuresi { return " · \(s) sn" }
         return ""
     }
 
+    @ViewBuilder
     private var sonucSatiri: some View {
         if let c = soru.cevap {
             if c.dogruMu {

@@ -328,10 +328,12 @@ struct BalikAsistaniEkrani: View {
                 }
                 .font(.footnote.weight(.semibold))
                 .foregroundColor(Renk.mavi)
-                Button("Onayı geri al") { geriAlSor = true }
-                    .font(.footnote)
-                    .underline()
-                    .foregroundColor(Renk.soluk)
+                Button { geriAlSor = true } label: {
+                    Text("Onayı geri al")
+                        .font(.footnote)
+                        .underline()
+                        .foregroundColor(Renk.soluk)
+                }
             }
         }
         .font(.footnote)

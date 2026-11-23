@@ -69,9 +69,11 @@ struct SureliBaslaKarti: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Label("SÜRELİ TUR", systemImage: "bolt.fill")
+                HStack(spacing: 5) {
+                    Image(systemName: "bolt.fill")
+                    Text("SÜRELİ TUR").kerning(1.4)
+                }
                     .font(.caption2.weight(.bold))
-                    .tracking(1.4)
                     .foregroundColor(SureliRenk.altin)
                     .padding(.horizontal, 11)
                     .padding(.vertical, 4)
