@@ -245,7 +245,8 @@ enum APIIstemci {
 
     /// bilgi.php GET: haftanın soruları (setId verilirse geçmiş set).
     static func bilgi(setId: Int?, token: String) async throws -> BilgiVerisi {
-        var sorgu: [URLQueryItem] = []
+        // sureli=1: bu sürüm süreli turu destekliyor (eski sürümlere sunucu "güncelle" yazısı gönderir).
+        var sorgu: [URLQueryItem] = [URLQueryItem(name: "sureli", value: "1")]
         if let s = setId {
             sorgu.append(URLQueryItem(name: "set", value: String(s)))
         }
@@ -261,6 +262,27 @@ enum APIIstemci {
     }
 
     /// bilgi.php POST: cevap gönder.
+    /// bilgi.php POST islem=ac: süreli turda soruyu açar, süre başlar.
+    static func bilgiAc(soruId: Int, token: String) async throws {
+        _ = try await gonder(tokenliIstek("bilgi.php", token: token,
+                                          govde: ["islem": "ac", "soru_id": String(soruId)]))
+    }
+
+    // MARK: Uygulama sürüm takibi — api/surum-bildir.php, api/yonetim-surumler.php
+
+    /// Uygulama açılınca günde bir kez: platform, uygulama sürümü, iOS sürümü ve telefon modeli.
+    static func surumBildir(surum: String, kod: Int, sistem: String, model: String, token: String) async throws {
+        _ = try await gonder(tokenliIstek("surum-bildir.php", token: token,
+                                          govde: ["platform": "ios", "surum": surum, "kod": String(kod),
+                                                  "sistem": sistem, "model": model]))
+    }
+
+    /// Yönetim > Uygulama sürümleri (yalnızca yönetici).
+    static func surumListesi(token: String) async throws -> SurumListesi {
+        let j = try await gonder(tokenliIstek("yonetim-surumler.php", token: token))
+        return try snakeCoz(j, SurumListesi.self)
+    }
+
     static func bilgiCevapla(soruId: Int, secim: String, token: String) async throws {
         _ = try await gonder(tokenliIstek("bilgi.php", token: token,
                                           govde: ["soru_id": String(soruId), "secim": secim]))
@@ -468,7 +490,19 @@ enum APIIstemci {
         let j = try await gonder(tokenliIstek("asistan.php", token: token))
         return AsistanDurumu(acik: j["acik"]?.mantik ?? false,
                              kalanYazi: j["kalan_yazi"]?.metin ?? "",
-                             uyari: j["uyari"]?.metin ?? "")
+                             uyari: j["uyari"]?.metin ?? "",
+                             onayGerekli: j["onay_gerekli"]?.mantik ?? false,
+                             onayBaslik: j["onay_baslik"]?.metin ?? "Yurt dışına aktarım onayı",
+                             onayMetni: (j["onay_metni"]?.dizi ?? []).compactMap { d in
+                                 let m = (d.metin ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                                 return m.isEmpty ? nil : m
+                             })
+    }
+
+    /// Yurt dışına aktarım için açık rıza: ver = true onay verir, false geri alır.
+    static func asistanOnay(ver: Bool, token: String) async throws {
+        _ = try await gonder(tokenliIstek("asistan.php", token: token,
+                                          govde: ["islem": "onay", "ver": ver ? "true" : "false"]))
     }
 
     /// Soru (ve isteğe bağlı fotoğraf) gönderir. Sohbet geçmişi telefonda tutulur, her soruda gönderilir.

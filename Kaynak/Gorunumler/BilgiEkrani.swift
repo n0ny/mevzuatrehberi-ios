@@ -35,11 +35,19 @@ struct BilgiVerisi: Codable {
         let dogruHarf: String?
         let aciklama: String?
         let kaynak: String?
+        /// Süreli turda: cevap / doldu / acik / sirada / bekliyor (süreli değilse nil).
+        var durum: String? = nil
+        var sureDoldu: Bool? = nil
+        /// Açık soruda kalan saniye.
+        var kalan: Int? = nil
+        var cevapSuresi: Int? = nil
     }
 
     struct Ozet: Codable {
         let toplam: Int
         let cevap: Int
+        /// Süresi dolup cevapsız kalan soru sayısı (süreli tur).
+        var dolan: Int? = nil
         let dogru: Int
         let puan: Int
         let tamPuan: Int
@@ -79,6 +87,10 @@ struct BilgiVerisi: Codable {
     let bekleyen: Int
     let set: BilgiSeti?
     let sorular: [Soru]
+    /// Süreli tur açık mı (sunucudaki bilgi-sure.php anahtarı). Kapalıyken eski görünüm.
+    var sureli: Bool? = nil
+    /// Soru başına süre (saniye).
+    var sure: Int? = nil
     let ozet: Ozet
     let siralama: Siralamalar
     let gecmis: [GecmisSet]
@@ -146,7 +158,7 @@ struct BilgiEkrani: View {
                 if v.ozet.tamamlandi {
                     istatistik("\(v.ozet.puan)", "puan")
                 } else {
-                    istatistik("\(v.ozet.cevap)/\(v.ozet.toplam)", "cevaplandı", vurgu: true)
+                    istatistik("\(v.ozet.cevap + (v.ozet.dolan ?? 0))/\(v.ozet.toplam)", "cevaplandı", vurgu: true)
                     if v.ozet.cevap > 0 {
                         istatistik("\(v.ozet.puan)", "puan")
                     }
@@ -191,6 +203,27 @@ struct BilgiEkrani: View {
             }
             .padding(14)
             .kart()
+        } else if let set = v.set, v.sureli == true, set.acik, !arsiv {
+            // Süreli tur: önce açık/sıradaki soru, altında cevaplananlar (en yenisi üstte)
+            setKarti(v, set: set)
+            let ilk = v.ozet.cevap + (v.ozet.dolan ?? 0) == 0
+            ForEach(SureliKurallari.siralama(v.sorular)) { q in
+                switch q.durum {
+                case "sirada":
+                    if ilk {
+                        SureliBaslaKarti(veri: v) { await ac(q) }
+                    } else {
+                        SiradakiSerit(soru: q, toplam: v.ozet.toplam, sure: v.sure ?? 30) { await ac(q) }
+                    }
+                case "acik":
+                    SureliSoruKarti(soru: q, veri: v, gonder: { s in await cevapla(q, s) }, bitti: { await yukle() })
+                        .id("\(q.id)-\(q.kalan ?? 0)")
+                default:
+                    SoruKarti(soru: q, toplam: v.ozet.toplam, puan: v.soruPuani, setAcik: set.acik, arsiv: arsiv) { s in
+                        await cevapla(q, s)
+                    }
+                }
+            }
         } else if let set = v.set {
             setKarti(v, set: set)
             ForEach(v.sorular) { q in
@@ -245,7 +278,8 @@ struct BilgiEkrani: View {
 
     private func setKarti(_ v: BilgiVerisi, set: BilgiVerisi.BilgiSeti) -> some View {
         let kapali = set.arsiv || !set.acik
-        let oran = v.ozet.toplam > 0 ? Double(v.ozet.cevap) / Double(v.ozet.toplam) : 0
+        let biten = v.ozet.cevap + (v.ozet.dolan ?? 0)
+        let oran = v.ozet.toplam > 0 ? Double(biten) / Double(v.ozet.toplam) : 0
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
                 KartSimgesi(sembol: "questionmark.circle")
@@ -266,7 +300,7 @@ struct BilgiEkrani: View {
             ProgressView(value: oran)
                 .tint(Renk.mavi)
             if !kapali {
-                Text("\(v.ozet.toplam - v.ozet.cevap) soru cevabını bekliyor.")
+                Text("\(v.ozet.toplam - biten) soru cevabını bekliyor.")
                     .font(.footnote)
                     .foregroundColor(Renk.soluk)
             } else {
@@ -364,6 +398,23 @@ struct BilgiEkrani: View {
         } catch {
             hata = APIHatasi.baglanti.aciklama
         }
+    }
+
+    /// Süreli tur: soruyu açar, süre başlar.
+    private func ac(_ q: BilgiVerisi.Soru) async {
+        guard let t = oturum.token else { return }
+        bildirim = nil
+        do {
+            try await APIIstemci.bilgiAc(soruId: q.id, token: t)
+        } catch APIHatasi.yetkisiz(_) {
+            Eylemler.cikis(oturum: oturum, depo: depo)
+            return
+        } catch let e as APIHatasi {
+            bildirim = e.aciklama
+        } catch {
+            bildirim = APIHatasi.baglanti.aciklama
+        }
+        await yukle()
     }
 
     private func cevapla(_ q: BilgiVerisi.Soru, _ secim: String) async {
@@ -519,10 +570,15 @@ struct SoruKarti: View {
     }
 
     @ViewBuilder
+    private var sureYazi: String {
+        if let s = soru.cevapSuresi { return " · \(s) sn" }
+        return ""
+    }
+
     private var sonucSatiri: some View {
         if let c = soru.cevap {
             if c.dogruMu {
-                Label("Doğru bildin! +\(puan) puan", systemImage: "checkmark.circle")
+                Label("Doğru bildin! +\(puan) puan" + sureYazi, systemImage: "checkmark.circle")
                     .font(.footnote.weight(.semibold))
                     .foregroundColor(Renk.yesil)
                     .padding(10)
@@ -530,7 +586,7 @@ struct SoruKarti: View {
                     .background(Renk.yesilZemin)
                     .cornerRadius(10)
             } else {
-                Label("Bu sefer olmadı. Doğru cevap: \(soru.dogruHarf ?? "?")", systemImage: "xmark.circle")
+                Label("Bu sefer olmadı. Doğru cevap: \(soru.dogruHarf ?? "?")" + sureYazi, systemImage: "xmark.circle")
                     .font(.footnote.weight(.semibold))
                     .foregroundColor(Renk.kirmizi)
                     .padding(10)
@@ -538,6 +594,14 @@ struct SoruKarti: View {
                     .background(Renk.kirmiziZemin)
                     .cornerRadius(10)
             }
+        } else if soru.sureDoldu == true {
+            Label("Süre doldu, bu soru cevapsız sayıldı. Doğru cevap: \(soru.dogruHarf ?? "?")", systemImage: "xmark.circle")
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Renk.kirmizi)
+                .padding(10)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(Renk.kirmiziZemin)
+                .cornerRadius(10)
         } else if !setAcik || arsiv {
             Text("Bu soruyu süresi içinde cevaplamadın.")
                 .font(.footnote.weight(.semibold))

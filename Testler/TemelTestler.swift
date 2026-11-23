@@ -464,4 +464,73 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(AsistanYonetimKurallari.kisaZaman("2026-11-22 15:49:38"), "22.11 15:49")
         XCTAssertEqual(AsistanYonetimKurallari.ayAdi("2026-11"), "Kasım 2026")
     }
+
+    private func snake<T: Decodable>(_ json: String, _ tur: T.Type) throws -> T {
+        let j = try satir(json)
+        let c = JSONDecoder()
+        c.keyDecodingStrategy = .convertFromSnakeCase
+        return try c.decode(tur, from: try JSONEncoder().encode(j))
+    }
+
+    /// Süreli tur alanları gelmezse (anahtar kapalı) eski görünüm; gelirse çözülür ve sıralanır.
+    func testSureliTur() throws {
+        let temel = #"""
+        "soru_puani": 20, "yonetici": false, "bekleyen": 2,
+        "set": {"id": 1, "baslik": "Hafta 47", "tarih": "x", "bitis": "y", "acik": true, "arsiv": false},
+        "siralama": {"genel": {"liste": [], "siram": 0, "katilimci": 0}}, "gecmis": []
+        """#
+        let eski = try snake("{" + temel + #"""
+        , "sorular": [], "ozet": {"toplam": 0, "cevap": 0, "dogru": 0, "puan": 0, "tam_puan": 0, "tamamlandi": false, "siram": 0}}
+        """#, BilgiVerisi.self)
+        XCTAssertNil(eski.sureli)
+        XCTAssertNil(eski.ozet.dolan)
+
+        let v = try snake("{" + temel + #"""
+        , "sureli": true, "sure": 30,
+        "sorular": [
+          {"id": 1, "no": 1, "soru": "S1", "siklar": [], "kilitli": true, "cevap": {"secilen": "a", "dogru_mu": true}, "durum": "cevap", "cevap_suresi": 12},
+          {"id": 2, "no": 2, "soru": "S2", "siklar": [], "kilitli": true, "cevap": null, "durum": "doldu", "sure_doldu": true, "dogru_harf": "C"},
+          {"id": 3, "no": 3, "soru": "S3", "siklar": [], "kilitli": false, "cevap": null, "durum": "acik", "kalan": 21},
+          {"id": 4, "no": 4, "soru": "S4", "siklar": [], "kilitli": false, "cevap": null, "durum": "bekliyor"}
+        ],
+        "ozet": {"toplam": 4, "cevap": 1, "dolan": 1, "dogru": 1, "puan": 20, "tam_puan": 80, "tamamlandi": false, "siram": 0}}
+        """#, BilgiVerisi.self)
+        XCTAssertEqual(v.sureli, true)
+        XCTAssertEqual(v.sure, 30)
+        XCTAssertEqual(v.ozet.dolan, 1)
+        XCTAssertEqual(v.sorular[0].cevapSuresi, 12)
+        XCTAssertEqual(v.sorular[1].sureDoldu, true)
+        XCTAssertEqual(v.sorular[2].kalan, 21)
+        // Açık soru üstte, sonra cevaplananlar en yenisi önce; bekleyen gizli
+        XCTAssertEqual(SureliKurallari.siralama(v.sorular).map(\.id), [3, 2, 1])
+
+        XCTAssertEqual(SureliKurallari.asama(30), 0)
+        XCTAssertEqual(SureliKurallari.asama(11), 0)
+        XCTAssertEqual(SureliKurallari.asama(10), 1)
+        XCTAssertEqual(SureliKurallari.asama(6), 1)
+        XCTAssertEqual(SureliKurallari.asama(5), 2)
+        XCTAssertEqual(SureliKurallari.asama(1), 2)
+        XCTAssertEqual(SureliKurallari.asama(0), 0)
+    }
+
+    /// api/yonetim-surumler.php cevabı çözülebilmeli; arama Türkçe harflerle çalışmalı.
+    func testSurumListesi() throws {
+        let v = try snake(#"""
+        {"ok": true, "guncel": {"android": "2.4.0", "android_kod": 9, "ios": "3.1.0", "ios_kod": 31},
+         "ozet": [{"platform": "android", "surum": "2.4.0", "kod": 9, "sayi": 3}],
+         "bilinmiyor": 12,
+         "kisiler": [{"id": 5, "ad": "İsmail Şahin", "kullanici_adi": "ismail", "platform": "android", "surum": "2.3.0", "kod": 8,
+                      "sistem": "14", "model": "Samsung SM-A546E", "son": "24.11 09:12", "guncel": false}]}
+        """#, SurumListesi.self)
+        XCTAssertEqual(v.guncel.androidKod, 9)
+        XCTAssertEqual(v.ozet.first?.sayi, 3)
+        XCTAssertEqual(v.bilinmiyor, 12)
+        XCTAssertEqual(v.kisiler.first?.kullaniciAdi, "ismail")
+        XCTAssertEqual(SurumBildirimi.ara(v.kisiler, "ismail").count, 1)
+        XCTAssertEqual(SurumBildirimi.ara(v.kisiler, "ŞAHİN").count, 1)
+        XCTAssertEqual(SurumBildirimi.ara(v.kisiler, "sm-a546").count, 1)
+        XCTAssertEqual(SurumBildirimi.ara(v.kisiler, "pixel").count, 0)
+        XCTAssertEqual(SurumBildirimi.anahtar(kod: 31, gun: "2026-11-24"), "31|2026-11-24")
+        XCTAssertFalse(SurumBildirimi.model.isEmpty)
+    }
 }

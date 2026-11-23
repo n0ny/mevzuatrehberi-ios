@@ -211,6 +211,10 @@ struct YonetimEkrani: View {
                 icerikEtiketi("camera.viewfinder", "Balık Asistanı", "Soru hakları, kullanım raporu, bildirilen cevaplar")
             }
             .buttonStyle(.plain)
+            NavigationLink(destination: SurumYonetimiEkrani()) {
+                icerikEtiketi("iphone", "Uygulama sürümleri", "Kim hangi telefonda, hangi sürümü kullanıyor")
+            }
+            .buttonStyle(.plain)
         }
         .padding(16)
         .kart()

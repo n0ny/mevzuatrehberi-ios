@@ -348,6 +348,7 @@ struct AnaEkran: View {
             } catch {
                 asistanAcik = false
             }
+            await SurumBildirimi.gerekirseGonder(token: t)
         }
     }
 

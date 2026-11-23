@@ -9,6 +9,10 @@ struct AsistanDurumu {
     let acik: Bool
     let kalanYazi: String
     let uyari: String
+    /// Yurt dışına aktarım için açık rıza verilmemiş (KVKK md. 9/6-a); sohbet yerine onay metni gösterilir.
+    var onayGerekli: Bool = false
+    var onayBaslik: String = "Yurt dışına aktarım onayı"
+    var onayMetni: [String] = []
 }
 
 struct AsistanKarti: Identifiable, Hashable {
@@ -116,8 +120,93 @@ struct BalikAsistaniEkrani: View {
     @State private var kartBulunamadi = false
     @State private var uyariAcik = false
     @State private var bildirilen: AsistanMesaji?
+    @State private var durumYuklendi = false
+    @State private var onay: AsistanDurumu?
+    @State private var onayBekliyor = false
+    @State private var onayHata: String?
+    @State private var geriAlSor = false
 
     var body: some View {
+        Group {
+            if !durumYuklendi || onay != nil {
+                onayGorunumu
+            } else {
+                sohbetGorunumu
+            }
+        }
+        .task { await durumYukle() }
+        // Yazma alanı altta kalsın diye yüzen sekme çubuğu bu ekranda gizlenir (geri dönünce yeniden görünür).
+        .onAppear { SekmeCubuguDurumu.paylasilan.gizli = true }
+        .onDisappear { SekmeCubuguDurumu.paylasilan.gizli = false }
+        .alert("Onayı geri al", isPresented: $geriAlSor) {
+            Button("Geri al", role: .destructive) { onayDegistir(false) }
+            Button("Vazgeç", role: .cancel) {}
+        } message: {
+            Text("Onayını geri alırsan Balık Asistanı'nı kullanamazsın. İstediğin zaman yeniden onay verebilirsin.")
+        }
+    }
+
+    /// Yurt dışına aktarım için açık rıza ekranı. Metin sunucudan gelir (asistan-cekirdek.php), sitede ve Android'de de aynıdır.
+    private var onayGorunumu: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                Kahraman(baslik: "Balık Asistanı", aciklama: "Kullanmaya başlamadan önce lütfen oku.") { EmptyView() }
+                VStack(alignment: .leading, spacing: 12) {
+                    if let d = onay {
+                        VStack(alignment: .leading, spacing: 10) {
+                            Text(d.onayBaslik)
+                                .font(.headline)
+                                .foregroundColor(Renk.murekkep)
+                            ForEach(Array(d.onayMetni.enumerated()), id: \.offset) { _, p in
+                                Text(p)
+                                    .font(.subheadline)
+                                    .foregroundColor(Renk.murekkep)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
+                            NavigationLink(destination: YasalMetinEkrani(sayfa: "kvkk")) {
+                                Text("KVKK Aydınlatma Metni →")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundColor(Renk.mavi)
+                            }
+                        }
+                        .padding(16)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Renk.kart)
+                        .cornerRadius(18)
+                        if let h = onayHata {
+                            Bildirim(metin: h, hata: true)
+                        }
+                        Button {
+                            onayDegistir(true)
+                        } label: {
+                            HStack {
+                                Spacer()
+                                if onayBekliyor { ProgressView().tint(.white) }
+                                Text(onayBekliyor ? "Kaydediliyor…" : "Okudum, onaylıyorum")
+                                    .font(.body.weight(.semibold))
+                                Spacer()
+                            }
+                            .foregroundColor(.white)
+                            .padding(.vertical, 14)
+                            .background(Renk.dugme)
+                            .cornerRadius(14)
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(onayBekliyor)
+                    } else {
+                        HStack { Spacer(); ProgressView(); Spacer() }
+                            .padding(.vertical, 30)
+                    }
+                }
+                .padding(16)
+            }
+        }
+        .background(DenizZemini().ignoresSafeArea())
+        .navigationTitle("Balık Asistanı")
+        .markaBasligi()
+    }
+
+    private var sohbetGorunumu: some View {
         VStack(spacing: 0) {
             ScrollViewReader { kaydir in
                 ScrollView {
@@ -213,10 +302,6 @@ struct BalikAsistaniEkrani: View {
         } message: {
             Text("Bu kart telefondaki verilerde yok. İçeriği yenileyip (ana sayfada aşağı çek) tekrar dene.")
         }
-        .task { await durumYukle() }
-        // Yazma alanı altta kalsın diye yüzen sekme çubuğu bu ekranda gizlenir (geri dönünce yeniden görünür).
-        .onAppear { SekmeCubuguDurumu.paylasilan.gizli = true }
-        .onDisappear { SekmeCubuguDurumu.paylasilan.gizli = false }
     }
 
     // MARK: Parçalar
@@ -237,11 +322,17 @@ struct BalikAsistaniEkrani: View {
                     .foregroundColor(Renk.soluk)
                     .fixedSize(horizontal: false, vertical: true)
             }
-            Button(uyariAcik ? "Kısalt" : "Ayrıntılar") {
-                withAnimation(.easeInOut(duration: 0.2)) { uyariAcik.toggle() }
+            HStack(spacing: 18) {
+                Button(uyariAcik ? "Kısalt" : "Ayrıntılar") {
+                    withAnimation(.easeInOut(duration: 0.2)) { uyariAcik.toggle() }
+                }
+                .font(.footnote.weight(.semibold))
+                .foregroundColor(Renk.mavi)
+                Button("Onayı geri al") { geriAlSor = true }
+                    .font(.footnote)
+                    .underline()
+                    .foregroundColor(Renk.soluk)
             }
-            .font(.footnote.weight(.semibold))
-            .foregroundColor(Renk.mavi)
         }
         .font(.footnote)
         .foregroundColor(Renk.murekkep)
@@ -423,14 +514,38 @@ struct BalikAsistaniEkrani: View {
     // MARK: İşlemler
 
     private func durumYukle() async {
-        guard let t = oturum.token else { return }
+        guard let t = oturum.token else { durumYuklendi = true; return }
         do {
             let d = try await APIIstemci.asistanDurum(token: t)
             kalanYazi = d.kalanYazi
             uyari = d.uyari
             kapali = d.acik ? nil : "Balık Asistanı şu anda kullanıma kapalı."
+            onay = (d.acik && d.onayGerekli) ? d : nil
         } catch {
             // İnternet yoksa ekran açık kalır; soru gönderilince hata gösterilir.
+        }
+        durumYuklendi = true
+    }
+
+    /// ver = true: açık rıza verilir; false: geri alınır (sohbet temizlenir).
+    private func onayDegistir(_ ver: Bool) {
+        guard let t = oturum.token, !onayBekliyor else { return }
+        onayBekliyor = true
+        onayHata = nil
+        Task {
+            do {
+                try await APIIstemci.asistanOnay(ver: ver, token: t)
+                if !ver {
+                    mesajlar = []
+                    foto = nil
+                }
+                await durumYukle()
+            } catch let h as APIHatasi {
+                onayHata = h.aciklama
+            } catch {
+                onayHata = "İşlem yapılamadı. Tekrar dene."
+            }
+            onayBekliyor = false
         }
     }
 
@@ -463,6 +578,7 @@ struct BalikAsistaniEkrani: View {
                 }
             } catch let h as APIHatasi {
                 mesajlar.append(AsistanMesaji(rol: .hata, metin: h.aciklama))
+                await durumYukle() // onay geri alındıysa (ör. sitede) onay metni yeniden gösterilir
             } catch {
                 mesajlar.append(AsistanMesaji(rol: .hata, metin: "Bir hata oluştu. Tekrar dene."))
             }
