@@ -261,7 +261,7 @@ struct AnaEkran: View {
                         NavigationLink(destination: BalikAsistaniEkrani()) {
                             AnaKart(sembol: "camera.viewfinder", renk: .mavi, baslik: "Balık Asistanı",
                                     aciklama: "Fotoğraftan tür tanı, balıklar hakkında sor",
-                                    rozet: "Deneme")
+                                    rozet: "Yeni")
                         }
                     }
                     HStack(spacing: 11) {

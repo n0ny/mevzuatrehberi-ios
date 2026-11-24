@@ -530,7 +530,9 @@ final class TemelTestler: XCTestCase {
         XCTAssertEqual(SurumBildirimi.ara(v.kisiler, "ŞAHİN").count, 1)
         XCTAssertEqual(SurumBildirimi.ara(v.kisiler, "sm-a546").count, 1)
         XCTAssertEqual(SurumBildirimi.ara(v.kisiler, "pixel").count, 0)
-        XCTAssertEqual(SurumBildirimi.anahtar(kod: 31, gun: "2026-11-24"), "31|2026-11-24")
+        XCTAssertEqual(SurumBildirimi.anahtar(kod: 31, gun: "2026-11-24"), "2|31|2026-11-24")
+        XCTAssertEqual(SurumBildirimi.modelAdi("iPhone16,1"), "iPhone 15 Pro")
+        XCTAssertEqual(SurumBildirimi.modelAdi("iPhone99,9"), "iPhone99.9")
         XCTAssertFalse(SurumBildirimi.model.isEmpty)
     }
 }

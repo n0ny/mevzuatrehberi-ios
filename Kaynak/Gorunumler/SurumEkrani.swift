@@ -7,21 +7,43 @@ import SwiftUI
 // Yönetim > Uygulama sürümleri ekranı api/yonetim-surumler.php'den okur (Android ile aynı).
 
 enum SurumBildirimi {
-    /// Bugün bu sürüm için bildirildi mi? Anahtar: "kod|yyyy-MM-dd"
-    static func anahtar(kod: Int, gun: String) -> String { "\(kod)|\(gun)" }
+    /// Bugün bu sürüm için bildirildi mi? Anahtar: "2|kod|yyyy-MM-dd"
+    /// (baştaki 2: model adı düzeltmesi; eski kayıtlar bir kez yeniden gönderilsin)
+    static func anahtar(kod: Int, gun: String) -> String { "2|\(kod)|\(gun)" }
 
     static var surum: String { Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "" }
     static var kod: Int { Int(Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "") ?? 0 }
 
-    /// Donanım kimliği, ör. "iPhone14,2" (UIDevice yalnızca "iPhone" verir).
+    /// Telefon adı, ör. "iPhone 15 Pro". Bilinmeyen modelde kimlik "iPhone18.3" gibi gönderilir
+    /// (sunucu virgülü siler, bu yüzden nokta).
     static var model: String {
         var bilgi = utsname()
         uname(&bilgi)
         let ham = withUnsafePointer(to: &bilgi.machine) {
             $0.withMemoryRebound(to: CChar.self, capacity: 1) { String(cString: $0) }
         }
-        return ham.isEmpty ? UIDevice.current.model : ham
+        return modelAdi(ham.isEmpty ? UIDevice.current.model : ham)
     }
+
+    static func modelAdi(_ kimlik: String) -> String {
+        if let ad = modeller[kimlik] { return ad }
+        return kimlik.replacingOccurrences(of: ",", with: ".")
+    }
+
+    private static let modeller: [String: String] = [
+        "iPhone12,1": "iPhone 11", "iPhone12,3": "iPhone 11 Pro", "iPhone12,5": "iPhone 11 Pro Max",
+        "iPhone12,8": "iPhone SE (2. nesil)",
+        "iPhone13,1": "iPhone 12 mini", "iPhone13,2": "iPhone 12", "iPhone13,3": "iPhone 12 Pro",
+        "iPhone13,4": "iPhone 12 Pro Max",
+        "iPhone14,4": "iPhone 13 mini", "iPhone14,5": "iPhone 13", "iPhone14,2": "iPhone 13 Pro",
+        "iPhone14,3": "iPhone 13 Pro Max", "iPhone14,6": "iPhone SE (3. nesil)",
+        "iPhone14,7": "iPhone 14", "iPhone14,8": "iPhone 14 Plus", "iPhone15,2": "iPhone 14 Pro",
+        "iPhone15,3": "iPhone 14 Pro Max",
+        "iPhone15,4": "iPhone 15", "iPhone15,5": "iPhone 15 Plus", "iPhone16,1": "iPhone 15 Pro",
+        "iPhone16,2": "iPhone 15 Pro Max",
+        "iPhone17,3": "iPhone 16", "iPhone17,4": "iPhone 16 Plus", "iPhone17,1": "iPhone 16 Pro",
+        "iPhone17,2": "iPhone 16 Pro Max", "iPhone17,5": "iPhone 16e",
+    ]
 
     @MainActor
     static func gerekirseGonder(token: String) async {
@@ -184,7 +206,7 @@ struct SurumYonetimiEkrani: View {
                 Text(k.ad)
                     .font(.subheadline.weight(.semibold))
                     .foregroundColor(Renk.murekkep)
-                let ayrinti = [k.model, k.sistem.isEmpty ? "" : "\(SurumBildirimi.platformAdi(k.platform)) \(k.sistem)", k.son]
+                let ayrinti = [k.model, k.sistem.isEmpty ? "" : "\(k.platform == "ios" ? "iOS" : "Android") \(k.sistem)", k.son]
                     .filter { !$0.isEmpty }
                     .joined(separator: " · ")
                 if !ayrinti.isEmpty {
